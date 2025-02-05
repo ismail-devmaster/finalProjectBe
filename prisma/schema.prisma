@@ -1,0 +1,25 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// model User {
+//   id           String   @id @default(cuid())
+//   email        String   @unique
+//   password     String
+//   isVerified   Boolean  @default(false)
+//   verificationToken String?
+// }
+model User {
+  id                  String   @id @default(cuid())
+  email               String   @unique
+  password            String
+  isVerified          Boolean  @default(false)
+  verificationToken   String?  @unique
+  resetToken          String?  @unique // Add this line for the reset token
+  resetTokenExpiry    DateTime? // Add this line for the token expiry time
+}
