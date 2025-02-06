@@ -7,19 +7,68 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// model User {
-//   id           String   @id @default(cuid())
-//   email        String   @unique
-//   password     String
-//   isVerified   Boolean  @default(false)
-//   verificationToken String?
-// }
+
+
 model User {
-  id                  String   @id @default(cuid())
-  email               String   @unique
+  id                  String         @id @default(cuid())
+  email               String         @unique
   password            String
-  isVerified          Boolean  @default(false)
-  verificationToken   String?  @unique
-  resetToken          String?  @unique // Add this line for the reset token
-  resetTokenExpiry    DateTime? // Add this line for the token expiry time
+  firstName           String
+  lastName            String
+  isVerified          Boolean        @default(false)
+  verificationToken   String?        @unique
+  resetToken          String?        @unique
+  resetTokenExpiry    DateTime?
+  role                Role           @default(PATIENT) // Default role is PATIENT
+  patient             Patient?       @relation("UserToPatient")
+  doctor              Doctor?        @relation("UserToDoctor")
+  receptionist        Receptionist?  @relation("UserToReceptionist")
+  admin               Admin?         @relation("UserToAdmin")
+  @@map("users")
+}
+
+enum Role {
+  USER
+  PATIENT
+  DOCTOR
+  RECEPTIONIST
+  ADMIN
+}
+
+model Patient {
+  userId              String   @id
+  user                User     @relation("UserToPatient", fields: [userId], references: [id])
+  dateOfBirth         DateTime
+  medicalHistory      String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  @@map("patients")
+}
+
+model Doctor {
+  userId              String   @id
+  user                User     @relation("UserToDoctor", fields: [userId], references: [id])
+  specialization      String
+  licenseNumber       String   @unique
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  @@map("doctors")
+}
+
+model Receptionist {
+  userId              String   @id
+  user                User     @relation("UserToReceptionist", fields: [userId], references: [id])
+  employeeId          String   @unique
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  @@map("receptionists")
+}
+
+model Admin {
+  userId              String   @id
+  user                User     @relation("UserToAdmin", fields: [userId], references: [id])
+  adminLevel          Int      @default(1)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  @@map("admins")
 }

@@ -15,10 +15,12 @@ const app = express();
 
 // Middleware
 app.use(bodyParser.json());
-app.use(cors({
-  origin: "http://localhost:3000", // Replace with your frontend URL
-  methods: ["GET", "POST"],
-}));
+app.use(
+  cors({
+    origin: "http://localhost:3000", // Replace with your frontend URL
+    methods: ["GET", "POST"],
+  })
+);
 
 // Server setup
 const PORT = process.env.PORT || 4000;
@@ -31,21 +33,51 @@ const generateVerificationToken = () =>
 
 // Sign-Up Route
 app.post("/signup", async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ error: "Email and password are required" });
+  const { email, password, firstName, lastName, roleData } = req.body;
+
+  if (!email || !password || !firstName || !lastName) {
+    return res.status(400).json({ error: "All fields are required" });
   }
+
   try {
+    // Check if the user already exists
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ error: "Email already registered" });
     }
+
+    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
     const verificationToken = generateVerificationToken();
+
+    // Ensure dateOfBirth is a valid Date object (if provided)
+    if (roleData?.dateOfBirth) {
+      // Convert "YYYY-MM-DD" string to a Date object
+      const [year, month, day] = roleData.dateOfBirth.split("-");
+      const dateOfBirth = new Date(year, month - 1, day); // Note: Months are 0-indexed in JavaScript
+
+      // Validate the converted date
+      if (isNaN(dateOfBirth.getTime())) {
+        return res.status(400).json({ error: "Invalid dateOfBirth format" });
+      }
+
+      // Update roleData with the validated Date object
+      roleData.dateOfBirth = dateOfBirth;
+    }
+
+    // Create the user with the default role (PATIENT)
     const user = await prisma.user.create({
-      data: { email, password: hashedPassword, verificationToken },
+      data: {
+        email,
+        password: hashedPassword,
+        firstName,
+        lastName,
+        verificationToken,
+        patient: roleData ? { create: { ...roleData } } : undefined, // Only create patient data if roleData is provided
+      },
     });
 
+    // Send verification email
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -53,19 +85,24 @@ app.post("/signup", async (req, res) => {
         pass: process.env.GMAIL_PASSWORD,
       },
     });
+
     const mailOptions = {
       from: process.env.GMAIL_USER,
       to: email,
       subject: "Verify Your Email",
       html: `<p>Click <a href="http://localhost:4000/verify/${verificationToken}">here</a> to verify your email.</p>`,
     };
+
     transporter.sendMail(mailOptions, (error) => {
       if (error) {
         console.error(error);
-        return res.status(500).json({ error: "Failed to send verification email" });
+        return res
+          .status(500)
+          .json({ error: "Failed to send verification email" });
       }
       res.status(201).json({
-        message: "User registered successfully. Please check your email for verification.",
+        message:
+          "User registered successfully. Please check your email for verification.",
       });
     });
   } catch (error) {
@@ -73,24 +110,26 @@ app.post("/signup", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-
-// Remaining routes (login, forgot password, reset password, etc.) remain unchanged...
 // Email Verification Route
 app.get("/verify/:token", async (req, res) => {
   try {
     const { token } = req.params;
+
     // Find the user with the given verification token
     const user = await prisma.user.findUnique({
       where: { verificationToken: token },
     });
+
     if (!user) {
       return res.status(400).send("Invalid or expired verification token");
     }
+
     // Mark the user as verified and remove the token
     await prisma.user.update({
       where: { id: user.id },
       data: { isVerified: true, verificationToken: null },
     });
+
     res.send("Email verified successfully! You can now log in.");
   } catch (error) {
     console.error("Error during verification:", error.message);
@@ -101,30 +140,35 @@ app.get("/verify/:token", async (req, res) => {
 // Login Route
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
+
   if (!email || !password) {
     return res.status(400).json({ error: "Email and password are required" });
   }
+
   try {
     // Find the user by email
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return res.status(401).json({ error: "Invalid email or password" });
     }
+
     // Check if the user's email is verified
     if (!user.isVerified) {
-      return res
-        .status(403)
-        .json({ error: "Email not verified. Please verify your email first." });
+      return res.status(403).json({
+        error: "Email not verified. Please verify your email first.",
+      });
     }
+
     // Compare the provided password with the hashed password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ error: "Invalid email or password" });
     }
+
     // Return success response
     res.json({
       message: "Login successful",
-      user: { id: user.id, email: user.email },
+      user: { id: user.id, email: user.email, role: user.role },
     });
   } catch (error) {
     console.error(error);
@@ -135,9 +179,11 @@ app.post("/login", async (req, res) => {
 // Forgot Password Route
 app.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
+
   if (!email) {
     return res.status(400).json({ error: "Email is required" });
   }
+
   try {
     // Check if the user exists
     const user = await prisma.user.findUnique({ where: { email } });
