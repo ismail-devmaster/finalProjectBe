@@ -7,26 +7,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-
-
-model User {
-  id                  String         @id @default(cuid())
-  email               String         @unique
-  password            String
-  firstName           String
-  lastName            String
-  isVerified          Boolean        @default(false)
-  verificationToken   String?        @unique
-  resetToken          String?        @unique
-  resetTokenExpiry    DateTime?
-  role                Role           @default(PATIENT) // Default role is PATIENT
-  patient             Patient?       @relation("UserToPatient")
-  doctor              Doctor?        @relation("UserToDoctor")
-  receptionist        Receptionist?  @relation("UserToReceptionist")
-  admin               Admin?         @relation("UserToAdmin")
-  @@map("users")
-}
-
 enum Role {
   USER
   PATIENT
@@ -35,40 +15,168 @@ enum Role {
   ADMIN
 }
 
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum AppointmentStatusEnum {
+  WAITING
+  UPCOMING
+  COMPLETED
+}
+
+enum PaymentStatusEnum {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+enum QueueStatusEnum {
+  WAITING
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+  CANCELLED
+}
+
+model Sex {
+  id     Int    @id @default(autoincrement())
+  gender Gender @unique
+  users  User[] // Changed from patients to users
+}
+
+model AppointmentStatus {
+  id           Int                   @id @default(autoincrement())
+  status       AppointmentStatusEnum @unique
+  appointments Appointment[]
+}
+
+model AppointmentType {
+  id           Int           @id @default(autoincrement())
+  type         String        @unique
+  appointments Appointment[]
+}
+
+model PaymentStatus {
+  id       Int               @id @default(autoincrement())
+  status   PaymentStatusEnum @unique
+  payments Payment[]
+}
+
+model User {
+  id                String        @id @default(cuid())
+  email             String        @unique
+  password          String
+  firstName         String
+  lastName          String
+  dateOfBirth       DateTime
+  phone             String?
+  sexId             Int
+  sex               Sex           @relation(fields: [sexId], references: [id])
+  isVerified        Boolean       @default(false)
+  verificationToken String?       @unique
+  resetToken        String?       @unique
+  resetTokenExpiry  DateTime?
+  role              Role          @default(PATIENT)
+  patient           Patient?      @relation("UserToPatient")
+  doctor            Doctor?       @relation("UserToDoctor")
+  receptionist      Receptionist? @relation("UserToReceptionist")
+  admin             Admin?        @relation("UserToAdmin")
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@map("users")
+}
+
 model Patient {
-  userId              String   @id
-  user                User     @relation("UserToPatient", fields: [userId], references: [id])
-  dateOfBirth         DateTime
-  medicalHistory      String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  userId         String        @id
+  user           User          @relation("UserToPatient", fields: [userId], references: [id])
+  medicalHistory String?
+  appointments   Appointment[]
+  payments       Payment[]
+  queueEntries   Queue[]
+  actions        Action[]
+
   @@map("patients")
 }
 
 model Doctor {
-  userId              String   @id
-  user                User     @relation("UserToDoctor", fields: [userId], references: [id])
-  specialization      String
-  licenseNumber       String   @unique
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  userId       String        @id
+  user         User          @relation("UserToDoctor", fields: [userId], references: [id])
+  appointments Appointment[]
+  payments     Payment[]
+
   @@map("doctors")
 }
 
 model Receptionist {
-  userId              String   @id
-  user                User     @relation("UserToReceptionist", fields: [userId], references: [id])
-  employeeId          String   @unique
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  userId String @id
+  user   User   @relation("UserToReceptionist", fields: [userId], references: [id])
   @@map("receptionists")
 }
 
 model Admin {
-  userId              String   @id
-  user                User     @relation("UserToAdmin", fields: [userId], references: [id])
-  adminLevel          Int      @default(1)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  userId String @id
+  user   User   @relation("UserToAdmin", fields: [userId], references: [id])
+
   @@map("admins")
+}
+
+model Action {
+  id           Int           @id @default(autoincrement())
+  name         String
+  patientId    String // Changed from Int to String
+  description  String?
+  totalPayment Float         @default(0.00)
+  startDate    DateTime      @default(now())
+  endDate      DateTime?
+  patient      Patient       @relation(fields: [patientId], references: [userId], onDelete: Cascade)
+  appointments Appointment[]
+  payments     Payment[]
+}
+
+model Appointment {
+  id              Int               @id @default(autoincrement())
+  patientId       String // Changed from Int to String
+  doctorId        String // Changed from Int to String
+  typeId          Int
+  actionId        Int
+  statusId        Int
+  date            DateTime          @db.Date
+  time            DateTime          @db.Time
+  additionalNotes String?
+  doctor          Doctor            @relation(fields: [doctorId], references: [userId])
+  patient         Patient           @relation(fields: [patientId], references: [userId], onDelete: Cascade)
+  status          AppointmentStatus @relation(fields: [statusId], references: [id])
+  type            AppointmentType   @relation(fields: [typeId], references: [id])
+  action          Action            @relation(fields: [actionId], references: [id], onDelete: Cascade)
+  queueEntries    Queue[]
+}
+
+model Queue {
+  id                    Int             @id @default(autoincrement())
+  patientId             String // Changed from Int to String
+  appointmentId         Int
+  estimatedWaitTime     Int
+  estimatedTimeToDoctor Int
+  status                QueueStatusEnum
+  appointment           Appointment     @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  patient               Patient         @relation(fields: [patientId], references: [userId], onDelete: Cascade)
+}
+
+model Payment {
+  id          Int           @id @default(autoincrement())
+  patientId   String // Changed from Int to String
+  doctorId    String // Changed from Int to String
+  statusId    Int
+  actionId    Int
+  amount      Float         @default(0.00)
+  date        DateTime      @db.Date
+  time        DateTime      @db.Time
+  description String?
+  doctor      Doctor        @relation(fields: [doctorId], references: [userId])
+  patient     Patient       @relation(fields: [patientId], references: [userId], onDelete: Cascade)
+  status      PaymentStatus @relation(fields: [statusId], references: [id])
+  action      Action        @relation(fields: [actionId], references: [id], onDelete: Cascade)
 }

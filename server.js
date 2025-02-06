@@ -5,6 +5,7 @@ const nodemailer = require("nodemailer");
 const cors = require("cors");
 const { PrismaClient } = require("@prisma/client");
 const dotenv = require("dotenv");
+const jwt = require("jsonwebtoken");
 
 // Load environment variables
 dotenv.config();
@@ -22,6 +23,42 @@ app.use(
   })
 );
 
+// JWT functions
+const generateToken = (userId, role) => {
+  return jwt.sign({ userId, role }, process.env.JWT_SECRET, {
+    expiresIn: "1h",
+  });
+};
+
+// Authentication middleware
+const authenticateUser = async (req, res, next) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ error: "Unauthorized" });
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true, role: true },
+    });
+
+    if (!user) throw new Error("User not found");
+    req.user = user;
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: "Invalid token" });
+  }
+};
+
+const authenticateAdmin = async (req, res, next) => {
+  await authenticateUser(req, res, () => {
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+    next();
+  });
+};
+
 // Server setup
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
@@ -33,9 +70,27 @@ const generateVerificationToken = () =>
 
 // Sign-Up Route
 app.post("/signup", async (req, res) => {
-  const { email, password, firstName, lastName, roleData } = req.body;
+  const {
+    email,
+    password,
+    firstName,
+    lastName,
+    dateOfBirth,
+    phone,
+    sexId,
+    roleData,
+  } = req.body;
 
-  if (!email || !password || !firstName || !lastName) {
+  // Validate required fields
+  if (
+    !email ||
+    !password ||
+    !firstName ||
+    !lastName ||
+    !dateOfBirth ||
+    !phone ||
+    !sexId
+  ) {
     return res.status(400).json({ error: "All fields are required" });
   }
 
@@ -50,19 +105,13 @@ app.post("/signup", async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const verificationToken = generateVerificationToken();
 
-    // Ensure dateOfBirth is a valid Date object (if provided)
-    if (roleData?.dateOfBirth) {
-      // Convert "YYYY-MM-DD" string to a Date object
-      const [year, month, day] = roleData.dateOfBirth.split("-");
-      const dateOfBirth = new Date(year, month - 1, day); // Note: Months are 0-indexed in JavaScript
+    // Convert dateOfBirth to a valid Date object
+    const [year, month, day] = dateOfBirth.split("-");
+    const parsedDateOfBirth = new Date(year, month - 1, day); // Note: Months are 0-indexed in JavaScript
 
-      // Validate the converted date
-      if (isNaN(dateOfBirth.getTime())) {
-        return res.status(400).json({ error: "Invalid dateOfBirth format" });
-      }
-
-      // Update roleData with the validated Date object
-      roleData.dateOfBirth = dateOfBirth;
+    // Validate the converted date
+    if (isNaN(parsedDateOfBirth.getTime())) {
+      return res.status(400).json({ error: "Invalid dateOfBirth format" });
     }
 
     // Create the user with the default role (PATIENT)
@@ -72,8 +121,13 @@ app.post("/signup", async (req, res) => {
         password: hashedPassword,
         firstName,
         lastName,
+        dateOfBirth: parsedDateOfBirth,
+        phone,
+        sexId: parseInt(sexId, 10), // Ensure sexId is an integer
+        isVerified: false,
         verificationToken,
-        patient: roleData ? { create: { ...roleData } } : undefined, // Only create patient data if roleData is provided
+        role: "PATIENT", // Default role is PATIENT
+        patient: { create: { ...roleData } },
       },
     });
 
@@ -110,6 +164,7 @@ app.post("/signup", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
 // Email Verification Route
 app.get("/verify/:token", async (req, res) => {
   try {
@@ -137,7 +192,7 @@ app.get("/verify/:token", async (req, res) => {
   }
 });
 
-// Login Route
+// Updated Login Route with JWT
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -165,14 +220,35 @@ app.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
-    // Return success response
+    // Generate JWT token
+    const token = generateToken(user.id, user.role);
+
+    // Return success response with token
     res.json({
       message: "Login successful",
+      token,
       user: { id: user.id, email: user.email, role: user.role },
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Admin Verification Endpoint
+app.get("/api/admin/verify", authenticateAdmin, (req, res) => {
+  res.json({ isAdmin: true });
+});
+
+// Protected Admin Route Example
+app.get("/api/admin/users", authenticateAdmin, async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: { id: true, email: true, role: true },
+    });
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: "Server error" });
   }
 });
 
