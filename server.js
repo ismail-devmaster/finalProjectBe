@@ -1,47 +1,56 @@
+// server.js
 const express = require("express");
 const bodyParser = require("body-parser");
 const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
 const cors = require("cors");
+const cookieParser = require("cookie-parser"); // NEW: to parse cookies
 const { PrismaClient } = require("@prisma/client");
 const dotenv = require("dotenv");
 const jwt = require("jsonwebtoken");
 
-// Load environment variables
 dotenv.config();
-
-// Initialize Prisma client and Express app
 const prisma = new PrismaClient();
 const app = express();
 
-// Middleware
+// Middlewares
 app.use(bodyParser.json());
+app.use(cookieParser()); // Parse cookies from incoming requests
 app.use(
   cors({
     origin: "http://localhost:3000", // Replace with your frontend URL
     methods: ["GET", "POST"],
+    credentials: true, // Allow sending cookies in cross-origin requests
   })
 );
 
-// JWT functions
-const generateToken = (userId, role) => {
-  return jwt.sign({ userId, role }, process.env.JWT_SECRET, {
-    expiresIn: "1h",
+// JWT Generation function
+const generateTokens = (userId, role) => {
+  const accessToken = jwt.sign({ userId, role }, process.env.JWT_SECRET, {
+    expiresIn: "15m", // Short lifespan for access token
   });
+
+  const refreshToken = jwt.sign(
+    { userId, role },
+    process.env.REFRESH_TOKEN_SECRET,
+    {
+      expiresIn: "7d", // Long lifespan for refresh token
+    }
+  );
+
+  return { accessToken, refreshToken };
 };
 
-// Authentication middleware
+// Authentication middleware: reads token from cookie
 const authenticateUser = async (req, res, next) => {
-  const token = req.headers.authorization?.split(" ")[1];
+  const token = req.cookies.authToken; // Get token from HTTP-only cookie
   if (!token) return res.status(401).json({ error: "Unauthorized" });
-
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: { id: true, role: true },
     });
-
     if (!user) throw new Error("User not found");
     req.user = user;
     next();
@@ -50,7 +59,9 @@ const authenticateUser = async (req, res, next) => {
   }
 };
 
+// Admin authentication middleware
 const authenticateAdmin = async (req, res, next) => {
+  // First verify the token and load the user
   await authenticateUser(req, res, () => {
     if (req.user.role !== "ADMIN") {
       return res.status(403).json({ error: "Admin access required" });
@@ -59,7 +70,6 @@ const authenticateAdmin = async (req, res, next) => {
   });
 };
 
-// Server setup
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
@@ -144,7 +154,7 @@ app.post("/signup", async (req, res) => {
       from: process.env.GMAIL_USER,
       to: email,
       subject: "Verify Your Email",
-      html: `<p>Click <a href="http://localhost:4000/verify/${verificationToken}">here</a> to verify your email.</p>`,
+      html: `Click here to verify your email.`,
     };
 
     transporter.sendMail(mailOptions, (error) => {
@@ -192,7 +202,7 @@ app.get("/verify/:token", async (req, res) => {
   }
 });
 
-// Updated Login Route with JWT
+// LOGIN ROUTE
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -201,32 +211,50 @@ app.post("/login", async (req, res) => {
   }
 
   try {
-    // Find the user by email
     const user = await prisma.user.findUnique({ where: { email } });
+
     if (!user) {
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
-    // Check if the user's email is verified
     if (!user.isVerified) {
-      return res.status(403).json({
-        error: "Email not verified. Please verify your email first.",
-      });
+      return res
+        .status(403)
+        .json({ error: "Email not verified. Please verify your email first." });
     }
 
-    // Compare the provided password with the hashed password
     const isPasswordValid = await bcrypt.compare(password, user.password);
+
     if (!isPasswordValid) {
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
-    // Generate JWT token
-    const token = generateToken(user.id, user.role);
+    // Generate tokens
+    const { accessToken, refreshToken } = generateTokens(user.id, user.role);
 
-    // Return success response with token
+    // Save refresh token in the database
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken },
+    });
+
+    // Set cookies
+    res.cookie("authToken", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
     res.json({
       message: "Login successful",
-      token,
       user: { id: user.id, email: user.email, role: user.role },
     });
   } catch (error) {
@@ -235,21 +263,84 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// Admin Verification Endpoint
-app.get("/api/admin/verify", authenticateAdmin, (req, res) => {
-  res.json({ isAdmin: true });
+// Token Refresh Route
+app.post("/refresh-token", async (req, res) => {
+  const { refreshToken } = req.cookies;
+
+  if (!refreshToken) {
+    return res.status(401).json({ error: "Refresh token is required" });
+  }
+
+  try {
+    // Verify the refresh token
+    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+
+    // Find the user with the matching refresh token
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId, refreshToken },
+    });
+
+    if (!user) {
+      return res.status(403).json({ error: "Invalid refresh token" });
+    }
+
+    // Generate new tokens
+    const { accessToken, refreshToken: newRefreshToken } = generateTokens(
+      user.id,
+      user.role
+    );
+
+    // Update the refresh token in the database
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken: newRefreshToken },
+    });
+
+    // Set new cookies
+    res.cookie("authToken", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
+
+    res.cookie("refreshToken", newRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    res.json({ message: "Tokens refreshed successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(403).json({ error: "Invalid or expired refresh token" });
+  }
 });
 
-// Protected Admin Route Example
-app.get("/api/admin/users", authenticateAdmin, async (req, res) => {
+// Logout Route
+app.post("/logout", authenticateUser, async (req, res) => {
   try {
-    const users = await prisma.user.findMany({
-      select: { id: true, email: true, role: true },
+    // Clear the refresh token from the database
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { refreshToken: null },
     });
-    res.json(users);
+
+    // Clear cookies
+    res.clearCookie("authToken");
+    res.clearCookie("refreshToken");
+
+    res.json({ message: "Logged out successfully" });
   } catch (error) {
-    res.status(500).json({ error: "Server error" });
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
+});
+
+// ADMIN VERIFICATION ENDPOINT
+app.get("/api/admin/verify", authenticateAdmin, (req, res) => {
+  res.json({ isAdmin: true });
 });
 
 // Forgot Password Route
@@ -263,6 +354,7 @@ app.post("/forgot-password", async (req, res) => {
   try {
     // Check if the user exists
     const user = await prisma.user.findUnique({ where: { email } });
+
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -290,7 +382,7 @@ app.post("/forgot-password", async (req, res) => {
       from: process.env.GMAIL_USER,
       to: email,
       subject: "Password Reset Request",
-      html: `<p>Click <a href="http://localhost:3000/auth/reset-password/${resetToken}">here</a> to reset your password.</p>`,
+      html: `Click here to reset your password.`,
     };
 
     transporter.sendMail(mailOptions, (error) => {
