@@ -1,13 +1,15 @@
-// server.js
 const express = require("express");
 const bodyParser = require("body-parser");
 const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
 const cors = require("cors");
-const cookieParser = require("cookie-parser"); // NEW: to parse cookies
+const cookieParser = require("cookie-parser");
 const { PrismaClient } = require("@prisma/client");
 const dotenv = require("dotenv");
 const jwt = require("jsonwebtoken");
+const session = require("express-session");
+const passport = require("passport");
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
 
 dotenv.config();
 const prisma = new PrismaClient();
@@ -15,69 +17,125 @@ const app = express();
 
 // Middlewares
 app.use(bodyParser.json());
-app.use(cookieParser()); // Parse cookies from incoming requests
+app.use(cookieParser());
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL, // Replace with your frontend URL
+    origin: "http://localhost:3000",
     methods: ["GET", "POST"],
-    credentials: true, // Allow sending cookies in cross-origin requests
+    credentials: true,
   })
 );
+
+// Session Middleware
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "your-session-secret",
+    resave: false,
+    saveUninitialized: false,
+  })
+);
+
+// Passport Initialization
+app.use(passport.initialize());
+app.use(passport.session());
 
 // JWT Generation function
 const generateTokens = (userId, role) => {
   const accessToken = jwt.sign({ userId, role }, process.env.JWT_SECRET, {
-    expiresIn: "15m", // Short lifespan for access token
+    expiresIn: "15m",
   });
-
   const refreshToken = jwt.sign(
     { userId, role },
     process.env.REFRESH_TOKEN_SECRET,
-    {
-      expiresIn: "7d", // Long lifespan for refresh token
-    }
+    { expiresIn: "7d" }
   );
-
   return { accessToken, refreshToken };
 };
 
-// Helper function to generate a random verification token
-const generateVerificationToken = () =>
-  Math.random().toString(36).substring(2, 15) +
-  Math.random().toString(36).substring(2, 15);
-
-// Authentication middleware: reads token from cookie
+// Authentication middleware
 const authenticateUser = async (req, res, next) => {
-  const token = req.cookies.authToken; // Get token from HTTP-only cookie
+  const token = req.cookies.authToken;
   if (!token) return res.status(401).json({ error: "Unauthorized" });
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, role: true },
+      select: { id: true, role: true, email: true },
     });
     if (!user) throw new Error("User not found");
     req.user = user;
     next();
   } catch (error) {
-    return res.status(401).json({ error: "Invalid token" });
+    res.status(401).json({ error: "Invalid token" });
   }
 };
 
-// Admin authentication middleware
+// Admin middleware
 const authenticateAdmin = async (req, res, next) => {
-  // First verify the token and load the user
-  await authenticateUser(req, res, () => {
-    if (req.user.role !== "ADMIN") {
+  authenticateUser(req, res, () => {
+    if (req.user?.role !== "ADMIN") {
       return res.status(403).json({ error: "Admin access required" });
     }
     next();
   });
 };
 
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Helper function to generate verification tokens
+const generateVerificationToken = () =>
+  Math.random().toString(36).substring(2, 15) +
+  Math.random().toString(36).substring(2, 15);
 
+// Google OAuth configuration
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL:
+        process.env.GOOGLE_CALLBACK_URL ||
+        "http://localhost:4000/auth/google/callback",
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        const email = profile.emails[0].value;
+        const user = await prisma.user.upsert({
+          where: { email },
+          update: {},
+          create: {
+            email,
+            password: await bcrypt.hash(Math.random().toString(), 10),
+            firstName: profile.displayName.split(" ")[0],
+            lastName: profile.displayName.split(" ").slice(1).join(" "),
+            dateOfBirth: new Date(),
+            phone: "",
+            sexId: 1,
+            isVerified: true,
+            role: "PATIENT",
+          },
+        });
+        done(null, user);
+      } catch (error) {
+        done(error, false);
+      }
+    }
+  )
+);
+
+// Serialize and deserialize user for Passport sessions
+passport.serializeUser((user, done) => done(null, user.id));
+passport.deserializeUser(async (id, done) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: { id: true, email: true, role: true },
+    });
+    done(null, user);
+  } catch (error) {
+    done(error, null);
+  }
+});
+
+// Routes
 // Sign-Up Route
 app.post("/signup", async (req, res) => {
   const {
@@ -154,7 +212,7 @@ app.post("/signup", async (req, res) => {
       from: process.env.GMAIL_USER,
       to: email,
       subject: "Verify Your Email",
-      html: `<p>Click <a href="${process.env.BACKEND_URL}/verify/${verificationToken}">here</a> to verify your email.</p>`,
+      html: `Click here to verify your email.`,
     };
 
     transporter.sendMail(mailOptions, (error) => {
@@ -382,7 +440,7 @@ app.post("/forgot-password", async (req, res) => {
       from: process.env.GMAIL_USER,
       to: email,
       subject: "Password Reset Request",
-      html: `<p>Click <a href="${process.env.FRONTEND_URL}/auth/reset-password/${resetToken}">here</a> to reset your password.</p>`,
+      html: `Click here to reset your password.`,
     };
 
     transporter.sendMail(mailOptions, (error) => {
@@ -444,8 +502,55 @@ app.post("/reset-password/:token", async (req, res) => {
   }
 });
 
+// Google OAuth routes
+app.get(
+  "/auth/google",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
+
+app.get(
+  "/auth/google/callback",
+  passport.authenticate("google", { failureRedirect: "/login" }),
+  async (req, res) => {
+    const { user } = req;
+    if (!user) {
+      return res.status(401).json({ error: "Authentication failed" });
+    }
+
+    const { accessToken, refreshToken } = generateTokens(user.id, user.role);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken },
+    });
+
+    res.cookie("authToken", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    res.redirect("/profile");
+  }
+);
+
+app.get("/profile", authenticateUser, async (req, res) => {)
+
+
 // Graceful shutdown
 process.on("SIGINT", async () => {
   await prisma.$disconnect();
   process.exit(0);
 });
+
+// Start server
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

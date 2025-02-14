@@ -78,6 +78,7 @@ model User {
   verificationToken String?       @unique
   resetToken        String?       @unique
   resetTokenExpiry  DateTime?
+  refreshToken      String? 
   role              Role          @default(PATIENT)
   patient           Patient?      @relation("UserToPatient")
   doctor            Doctor?       @relation("UserToDoctor")
