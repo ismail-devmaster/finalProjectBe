@@ -7,7 +7,6 @@ const cookieParser = require("cookie-parser");
 const { PrismaClient } = require("@prisma/client");
 const dotenv = require("dotenv");
 const jwt = require("jsonwebtoken");
-const session = require("express-session");
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 
@@ -20,24 +19,11 @@ app.use(bodyParser.json());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
     methods: ["GET", "POST"],
     credentials: true,
   })
 );
-
-// Session Middleware
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "your-session-secret",
-    resave: false,
-    saveUninitialized: false,
-  })
-);
-
-// Passport Initialization
-app.use(passport.initialize());
-app.use(passport.session());
 
 // JWT Generation function
 const generateTokens = (userId, role) => {
@@ -52,7 +38,12 @@ const generateTokens = (userId, role) => {
   return { accessToken, refreshToken };
 };
 
-// Authentication middleware
+// Helper function to generate a random verification token
+const generateVerificationToken = () =>
+  Math.random().toString(36).substring(2, 15) +
+  Math.random().toString(36).substring(2, 15);
+
+// Authentication middleware: reads token from cookie
 const authenticateUser = async (req, res, next) => {
   const token = req.cookies.authToken;
   if (!token) return res.status(401).json({ error: "Unauthorized" });
@@ -60,83 +51,198 @@ const authenticateUser = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, role: true, email: true },
+      select: { id: true, role: true },
     });
     if (!user) throw new Error("User not found");
     req.user = user;
     next();
   } catch (error) {
-    res.status(401).json({ error: "Invalid token" });
+    return res.status(401).json({ error: "Invalid token" });
   }
 };
 
-// Admin middleware
+// Admin authentication middleware
 const authenticateAdmin = async (req, res, next) => {
-  authenticateUser(req, res, () => {
-    if (req.user?.role !== "ADMIN") {
+  await authenticateUser(req, res, async () => {
+    if (req.user.role !== "ADMIN") {
       return res.status(403).json({ error: "Admin access required" });
     }
     next();
   });
 };
 
-// Helper function to generate verification tokens
-const generateVerificationToken = () =>
-  Math.random().toString(36).substring(2, 15) +
-  Math.random().toString(36).substring(2, 15);
-
-// Google OAuth configuration
+// Google OAuth Setup with temporary token generation for new users
 passport.use(
   new GoogleStrategy(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL:
-        process.env.GOOGLE_CALLBACK_URL ||
-        "http://localhost:4000/auth/google/callback",
+      callbackURL: `${process.env.BACKEND_URL}/auth/google/callback`,
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        const email = profile.emails[0].value;
-        const user = await prisma.user.upsert({
-          where: { email },
-          update: {},
-          create: {
-            email,
-            password: await bcrypt.hash(Math.random().toString(), 10),
-            firstName: profile.displayName.split(" ")[0],
-            lastName: profile.displayName.split(" ").slice(1).join(" "),
-            dateOfBirth: new Date(),
-            phone: "",
-            sexId: 1,
-            isVerified: true,
-            role: "PATIENT",
-          },
-        });
-        done(null, user);
+        console.log("Google profile: ", profile);
+        const { value: email } = profile.emails[0];
+        const nameParts = profile.displayName.split(" ");
+        const firstName = nameParts[0];
+        const lastName =
+          nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
+
+        // Check if user exists
+        let user = await prisma.user.findUnique({ where: { email } });
+        if (user) {
+          // Existing user, proceed with normal login.
+          return done(null, user);
+        }
+
+        // If user does not exist, generate a temporary token with Google info.
+        const tempTokenPayload = {
+          email,
+          firstName,
+          lastName,
+          googleId: profile.id,
+        };
+
+        const tempToken = jwt.sign(
+          tempTokenPayload,
+          process.env.JWT_TEMP_SECRET,
+          { expiresIn: "10m" } // Short lifetime for security
+        );
+
+        // Instead of creating a user immediately, return an object with the temp token.
+        return done(null, { tempToken, isNewUser: true });
       } catch (error) {
-        done(error, false);
+        console.error("Error during Google auth: ", error);
+        done(error);
       }
     }
   )
 );
 
-// Serialize and deserialize user for Passport sessions
-passport.serializeUser((user, done) => done(null, user.id));
-passport.deserializeUser(async (id, done) => {
+// Routes
+// Google Authentication Routes
+app.get(
+  "/auth/google",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
+
+app.get(
+  "/auth/google/callback",
+  passport.authenticate("google", { failureRedirect: "/", session: false }),
+  async (req, res) => {
+    // If a new user, redirect to complete-profile page with the temp token
+    if (req.user.isNewUser && req.user.tempToken) {
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/auth/complete-profile?tempToken=${req.user.tempToken}`
+      );
+    }
+    // For existing users, proceed with the normal login flow
+    const user = req.user;
+    try {
+      const { accessToken, refreshToken } = generateTokens(user.id, user.role);
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { refreshToken },
+      });
+
+      res.cookie("authToken", accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Strict",
+        maxAge: 15 * 60 * 1000,
+      });
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+      const roleRedirects = {
+        ADMIN: "/admin",
+        DOCTOR: "/staff/doctor",
+        RECEPTIONIST: "/staff/receptionist",
+        PATIENT: "/patient",
+      };
+      const redirectPath = roleRedirects[user.role] || "/auth/login";
+      return res.redirect(`${process.env.FRONTEND_URL}${redirectPath}`);
+    } catch (error) {
+      console.error("Callback error: ", error);
+      res.redirect("/login");
+    }
+  }
+);
+
+// Endpoint to complete profile and create a new user
+app.post("/update-profile", async (req, res) => {
+  const { tempToken, phone, sexId, dateOfBirth } = req.body;
+  if (!tempToken || !phone || !sexId || !dateOfBirth) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
   try {
-    const user = await prisma.user.findUnique({
-      where: { id },
-      select: { id: true, email: true, role: true },
+    // Verify the temporary token
+    const tempPayload = jwt.verify(tempToken, process.env.JWT_TEMP_SECRET);
+    const { email, firstName, lastName } = tempPayload;
+
+    // Double-check that the user doesn't already exist
+    let existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json({ error: "User already exists" });
+    }
+
+    // Parse the provided dateOfBirth (expected in "YYYY-MM-DD" format)
+    const [year, month, day] = dateOfBirth.split("-");
+    const parsedDate = new Date(year, month - 1, day);
+
+    // Create a random password (or implement a method to set a password later)
+    const password = Math.random().toString(36).slice(-10);
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create the user using both Google info and the additional details
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        firstName,
+        lastName,
+        isVerified: true,
+        role: "PATIENT",
+        patient: { create: { /* minimal required patient data here */ } },
+        dateOfBirth: parsedDate,
+        phone,
+        sexId: parseInt(sexId, 10),
+      },
     });
-    done(null, user);
+
+    // Generate tokens and update the user record with the refresh token
+    const { accessToken, refreshToken } = generateTokens(user.id, user.role);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken },
+    });
+
+    res.cookie("authToken", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      maxAge: 15 * 60 * 1000,
+    });
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+    res.json({
+      message: "Profile updated and user created successfully",
+      user: { id: user.id, email: user.email, role: user.role },
+    });
   } catch (error) {
-    done(error, null);
+    console.error("Update profile error: ", error);
+    res.status(500).json({ error: "Failed to update profile" });
   }
 });
 
-// Routes
-// Sign-Up Route
+// Traditional Auth Routes (from klim.js)
 app.post("/signup", async (req, res) => {
   const {
     email,
@@ -149,7 +255,6 @@ app.post("/signup", async (req, res) => {
     roleData,
   } = req.body;
 
-  // Validate required fields
   if (
     !email ||
     !password ||
@@ -163,43 +268,36 @@ app.post("/signup", async (req, res) => {
   }
 
   try {
-    // Check if the user already exists
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ error: "Email already registered" });
     }
 
-    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
-    const verificationToken = generateVerificationToken();
-
-    // Convert dateOfBirth to a valid Date object
     const [year, month, day] = dateOfBirth.split("-");
-    const parsedDateOfBirth = new Date(year, month - 1, day); // Note: Months are 0-indexed in JavaScript
+    const parsedDate = new Date(year, month - 1, day);
 
-    // Validate the converted date
-    if (isNaN(parsedDateOfBirth.getTime())) {
-      return res.status(400).json({ error: "Invalid dateOfBirth format" });
+    if (isNaN(parsedDate.getTime())) {
+      return res.status(400).json({ error: "Invalid date format" });
     }
 
-    // Create the user with the default role (PATIENT)
+    const verificationToken = generateVerificationToken();
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         firstName,
         lastName,
-        dateOfBirth: parsedDateOfBirth,
+        dateOfBirth: parsedDate,
         phone,
-        sexId: parseInt(sexId, 10), // Ensure sexId is an integer
+        sexId: parseInt(sexId, 10),
         isVerified: false,
         verificationToken,
-        role: "PATIENT", // Default role is PATIENT
+        role: "PATIENT",
         patient: { create: { ...roleData } },
       },
     });
 
-    // Send verification email
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -212,20 +310,19 @@ app.post("/signup", async (req, res) => {
       from: process.env.GMAIL_USER,
       to: email,
       subject: "Verify Your Email",
-      html: `Click here to verify your email.`,
+      html: `<a href="${process.env.BACKEND_URL}/verify/${verificationToken}">Verify Email</a>`,
     };
 
-    transporter.sendMail(mailOptions, (error) => {
-      if (error) {
-        console.error(error);
+    transporter.sendMail(mailOptions, (err) => {
+      if (err) {
+        console.error(err);
         return res
           .status(500)
           .json({ error: "Failed to send verification email" });
       }
-      res.status(201).json({
-        message:
-          "User registered successfully. Please check your email for verification.",
-      });
+      res
+        .status(201)
+        .json({ message: "Registration successful. Verify your email." });
     });
   } catch (error) {
     console.error(error);
@@ -233,84 +330,62 @@ app.post("/signup", async (req, res) => {
   }
 });
 
-// Email Verification Route
 app.get("/verify/:token", async (req, res) => {
   try {
-    const { token } = req.params;
-
-    // Find the user with the given verification token
     const user = await prisma.user.findUnique({
-      where: { verificationToken: token },
+      where: { verificationToken: req.params.token },
     });
-
     if (!user) {
-      return res.status(400).send("Invalid or expired verification token");
+      return res.status(400).send("Invalid token");
     }
 
-    // Mark the user as verified and remove the token
     await prisma.user.update({
       where: { id: user.id },
       data: { isVerified: true, verificationToken: null },
     });
-
     res.send("Email verified successfully! You can now log in.");
   } catch (error) {
-    console.error("Error during verification:", error.message);
-    res.status(500).send("Internal server error");
+    console.error(error);
+    res.status(500).send("Error during verification");
   }
 });
 
-// LOGIN ROUTE
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    return res.status(400).json({ error: "Email and password are required" });
+    return res.status(400).json({ error: "Email & password required" });
   }
 
   try {
     const user = await prisma.user.findUnique({ where: { email } });
-
-    if (!user) {
-      return res.status(401).json({ error: "Invalid email or password" });
-    }
-
-    if (!user.isVerified) {
-      return res
-        .status(403)
-        .json({ error: "Email not verified. Please verify your email first." });
+    if (!user || !user.isVerified) {
+      return res.status(401).json({ error: "Invalid login details" });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
-
     if (!isPasswordValid) {
-      return res.status(401).json({ error: "Invalid email or password" });
+      return res.status(401).json({ error: "Invalid login details" });
     }
 
-    // Generate tokens
     const { accessToken, refreshToken } = generateTokens(user.id, user.role);
-
-    // Save refresh token in the database
     await prisma.user.update({
       where: { id: user.id },
       data: { refreshToken },
     });
 
-    // Set cookies
     res.cookie("authToken", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "Strict",
-      maxAge: 15 * 60 * 1000, // 15 minutes
+      maxAge: 15 * 60 * 1000,
     });
-
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "Strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
-
     res.json({
       message: "Login successful",
       user: { id: user.id, email: user.email, role: user.role },
@@ -321,19 +396,15 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// Token Refresh Route
 app.post("/refresh-token", async (req, res) => {
   const { refreshToken } = req.cookies;
 
   if (!refreshToken) {
-    return res.status(401).json({ error: "Refresh token is required" });
+    return res.status(401).json({ error: "No refresh token provided" });
   }
 
   try {
-    // Verify the refresh token
     const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
-
-    // Find the user with the matching refresh token
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId, refreshToken },
     });
@@ -342,92 +413,68 @@ app.post("/refresh-token", async (req, res) => {
       return res.status(403).json({ error: "Invalid refresh token" });
     }
 
-    // Generate new tokens
-    const { accessToken, refreshToken: newRefreshToken } = generateTokens(
-      user.id,
-      user.role
-    );
-
-    // Update the refresh token in the database
+    const { accessToken, newRefreshToken } = generateTokens(user.id, user.role);
     await prisma.user.update({
       where: { id: user.id },
       data: { refreshToken: newRefreshToken },
     });
 
-    // Set new cookies
     res.cookie("authToken", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "Strict",
-      maxAge: 15 * 60 * 1000, // 15 minutes
+      maxAge: 15 * 60 * 1000,
     });
-
     res.cookie("refreshToken", newRefreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "Strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.json({ message: "Tokens refreshed successfully" });
+    res.json({ message: "Tokens refreshed" });
   } catch (error) {
     console.error(error);
-    res.status(403).json({ error: "Invalid or expired refresh token" });
+    res.status(403).json({ error: "Token refresh failed" });
   }
 });
 
-// Logout Route
 app.post("/logout", authenticateUser, async (req, res) => {
   try {
-    // Clear the refresh token from the database
     await prisma.user.update({
       where: { id: req.user.id },
       data: { refreshToken: null },
     });
-
-    // Clear cookies
     res.clearCookie("authToken");
     res.clearCookie("refreshToken");
-
-    res.json({ message: "Logged out successfully" });
+    res.json({ message: "Logged out" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Logout failed" });
   }
 });
 
-// ADMIN VERIFICATION ENDPOINT
-app.get("/api/admin/verify", authenticateAdmin, (req, res) => {
-  res.json({ isAdmin: true });
-});
-
-// Forgot Password Route
 app.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
 
   if (!email) {
-    return res.status(400).json({ error: "Email is required" });
+    return res.status(400).json({ error: "Email required" });
   }
 
   try {
-    // Check if the user exists
     const user = await prisma.user.findUnique({ where: { email } });
-
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Generate a password reset token
     const resetToken = generateVerificationToken();
-    const resetTokenExpiry = new Date(Date.now() + 3600000); // Token expires in 1 hour
+    const resetTokenExpiry = new Date(Date.now() + 3600000);
 
-    // Save the reset token and its expiry time in the database
     await prisma.user.update({
-      where: { id: user.id },
+      where: { email: user.email },
       data: { resetToken, resetTokenExpiry },
     });
 
-    // Send password reset email
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -440,19 +487,15 @@ app.post("/forgot-password", async (req, res) => {
       from: process.env.GMAIL_USER,
       to: email,
       subject: "Password Reset Request",
-      html: `Click here to reset your password.`,
+      html: `<a href="${process.env.FRONTEND_URL}/reset/${resetToken}">Reset Password</a>`,
     };
 
-    transporter.sendMail(mailOptions, (error) => {
-      if (error) {
-        console.error(error);
-        return res
-          .status(500)
-          .json({ error: "Failed to send password reset email" });
+    transporter.sendMail(mailOptions, (err) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: "Failed to send email" });
       }
-      res
-        .status(200)
-        .json({ message: "Password reset email sent successfully." });
+      res.json({ message: "Password reset email sent" });
     });
   } catch (error) {
     console.error(error);
@@ -460,34 +503,25 @@ app.post("/forgot-password", async (req, res) => {
   }
 });
 
-// Reset Password Route
 app.post("/reset-password/:token", async (req, res) => {
-  const { token } = req.params;
   const { newPassword } = req.body;
-
-  if (!newPassword) {
-    return res.status(400).json({ error: "New password is required" });
-  }
+  const { token } = req.params;
 
   try {
-    // Find the user with the given reset token
     const user = await prisma.user.findFirst({
       where: {
         resetToken: token,
-        resetTokenExpiry: { gt: new Date() }, // Ensure the token hasn't expired
+        resetTokenExpiry: { gt: new Date() },
       },
     });
 
     if (!user) {
-      return res.status(400).json({ error: "Invalid or expired reset token" });
+      return res.status(400).json({ error: "Invalid token" });
     }
 
-    // Hash the new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    // Update the user's password and clear the reset token
     await prisma.user.update({
-      where: { id: user.id },
+      where: { email: user.email },
       data: {
         password: hashedPassword,
         resetToken: null,
@@ -495,62 +529,22 @@ app.post("/reset-password/:token", async (req, res) => {
       },
     });
 
-    res.status(200).json({ message: "Password reset successfully" });
+    res.json({ message: "Password reset successfully" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Password reset failed" });
   }
 });
 
-// Google OAuth routes
-app.get(
-  "/auth/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
-);
+app.get("/api/admin/verify", authenticateAdmin, (req, res) => {
+  res.json({ isAdmin: true });
+});
 
-app.get(
-  "/auth/google/callback",
-  passport.authenticate("google", { failureRedirect: "/login" }),
-  async (req, res) => {
-    const { user } = req;
-    if (!user) {
-      return res.status(401).json({ error: "Authentication failed" });
-    }
-
-    const { accessToken, refreshToken } = generateTokens(user.id, user.role);
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { refreshToken },
-    });
-
-    res.cookie("authToken", accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
-      maxAge: 15 * 60 * 1000, // 15 minutes
-    });
-
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
-
-    res.redirect("/profile");
-  }
-);
-
-app.get("/profile", authenticateUser, async (req, res) => {)
-
-
-// Graceful shutdown
+// Graceful Shutdown
 process.on("SIGINT", async () => {
   await prisma.$disconnect();
   process.exit(0);
 });
 
-// Start server
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
