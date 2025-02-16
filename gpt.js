@@ -81,7 +81,6 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        console.log("Google profile: ", profile);
         const { value: email } = profile.emails[0];
         const nameParts = profile.displayName.split(" ");
         const firstName = nameParts[0];
@@ -148,15 +147,16 @@ app.get(
       res.cookie("authToken", accessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "Strict",
+        sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
         maxAge: 15 * 60 * 1000,
       });
       res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "Strict",
+        sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
+
       const roleRedirects = {
         ADMIN: "/admin",
         DOCTOR: "/staff/doctor",
@@ -167,7 +167,7 @@ app.get(
       return res.redirect(`${process.env.FRONTEND_URL}${redirectPath}`);
     } catch (error) {
       console.error("Callback error: ", error);
-      res.redirect("/login");
+      res.redirect(`${process.env.FRONTEND_URL}/auth/login`);
     }
   }
 );
@@ -206,7 +206,11 @@ app.post("/update-profile", async (req, res) => {
         lastName,
         isVerified: true,
         role: "PATIENT",
-        patient: { create: { /* minimal required patient data here */ } },
+        patient: {
+          create: {
+            /* minimal required patient data here */
+          },
+        },
         dateOfBirth: parsedDate,
         phone,
         sexId: parseInt(sexId, 10),
