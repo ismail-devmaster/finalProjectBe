@@ -543,6 +543,32 @@ app.post("/reset-password/:token", async (req, res) => {
 app.get("/api/admin/verify", authenticateAdmin, (req, res) => {
   res.json({ isAdmin: true });
 });
+// Update user role endpoint (only accessible to admins)
+app.put("/update-role", authenticateAdmin, async (req, res) => {
+  const { userId, newRole } = req.body;
+  if (!userId || !newRole) {
+    return res.status(400).json({ error: "User ID and new role are required." });
+  }
+  
+  // Validate the newRole against allowed roles
+  const validRoles = ["ADMIN", "DOCTOR", "RECEPTIONIST", "PATIENT"];
+  if (!validRoles.includes(newRole)) {
+    return res.status(400).json({ error: "Invalid role provided." });
+  }
+  
+  try {
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { role: newRole },
+    });
+    res.json({
+      message: "User role updated successfully.",
+      user: updatedUser,
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to update user role." });
+  }
+});
 
 // Graceful Shutdown
 process.on("SIGINT", async () => {
