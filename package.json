@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "dev": "nodemon gpt.js",
+    "dev": "nodemon klim.js",
     "start": "node server.js",
     "seed": "node prisma/seed.js"
   },

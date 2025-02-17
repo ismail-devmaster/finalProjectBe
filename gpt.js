@@ -569,6 +569,37 @@ app.put("/update-role", authenticateAdmin, async (req, res) => {
     res.status(500).json({ error: "Failed to update user role." });
   }
 });
+// Delete user endpoint (only accessible to admin)
+app.delete("/user/:id", authenticateAdmin, async (req, res) => {
+  const userId = req.params.id;
+  try {
+    // Find the user by id
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // If the user is a patient, delete the associated patient record first.
+    if (user.role === "PATIENT") {
+      await prisma.patient.delete({ where: { userId } });
+    }
+    // If the user is a doctor, delete the associated doctor record first.
+    else if (user.role === "DOCTOR") {
+      await prisma.doctor.delete({ where: { userId } });
+    }
+    // If the user is a receptionist (assuming "repository" refers to receptionist), delete the record first.
+    else if (user.role === "RECEPTIONIST") {
+      await prisma.receptionist.delete({ where: { userId } });
+    }
+    
+    // Delete the user record
+    await prisma.user.delete({ where: { id: userId } });
+    res.json({ message: "User deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    res.status(500).json({ error: "Failed to delete user" });
+  }
+});
 
 // Graceful Shutdown
 process.on("SIGINT", async () => {
