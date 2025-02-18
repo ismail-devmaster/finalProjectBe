@@ -47,4 +47,13 @@ const authenticateDoctor = async (req, res, next) => {
   });
 };
 
-module.exports = { authenticateUser, authenticateAdmin, authenticatePatient, authenticateDoctor };
+const authenticateReceptionist = async (req, res, next) => {
+  await authenticateUser(req, res, () => {
+    if (req.user.role !== "RECEPTIONIST") {
+      return res.status(403).json({ error: "Receptionist access required" });
+    }
+    next();
+  });
+};
+
+module.exports = { authenticateUser, authenticateAdmin, authenticatePatient, authenticateDoctor, authenticateReceptionist };
