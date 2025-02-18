@@ -208,7 +208,6 @@ app.post("/update-profile", async (req, res) => {
         role: "PATIENT",
         patient: {
           create: {
-            /* minimal required patient data here */
           },
         },
         dateOfBirth: parsedDate,

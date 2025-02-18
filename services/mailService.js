@@ -15,7 +15,7 @@ const sendVerificationEmail = (email, verificationToken) => {
     from: process.env.GMAIL_USER,
     to: email,
     subject: "Verify Your Email",
-    html: `<a href="${process.env.BACKEND_URL}/verify/${verificationToken}">Verify Email</a>`,
+    html: `<a href="${process.env.BACKEND_URL}/auth/verify/${verificationToken}">Verify Email</a>`,
   };
   return new Promise((resolve, reject) => {
     transporter.sendMail(mailOptions, (err, info) => {
@@ -30,7 +30,7 @@ const sendResetPasswordEmail = (email, resetToken) => {
     from: process.env.GMAIL_USER,
     to: email,
     subject: "Password Reset Request",
-    html: `<a href="${process.env.FRONTEND_URL}/reset/${resetToken}">Reset Password</a>`,
+    html: `<a href="${process.env.FRONTEND_URL}/auth/reset-password/${resetToken}">Reset Password</a>`,
   };
   return new Promise((resolve, reject) => {
     transporter.sendMail(mailOptions, (err, info) => {
