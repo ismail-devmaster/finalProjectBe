@@ -29,4 +29,22 @@ const authenticateAdmin = async (req, res, next) => {
   });
 };
 
-module.exports = { authenticateUser, authenticateAdmin };
+const authenticatePatient = async (req, res, next) => {
+  await authenticateUser(req, res, () => {
+    if (req.user.role !== "PATIENT") {
+      return res.status(403).json({ error: "Patient access required" });
+    }
+    next();
+  });
+};
+
+const authenticateDoctor = async (req, res, next) => {
+  await authenticateUser(req, res, () => {
+    if (req.user.role !== "DOCTOR") {
+      return res.status(403).json({ error: "Doctor access required" });
+    }
+    next();
+  });
+};
+
+module.exports = { authenticateUser, authenticateAdmin, authenticatePatient, authenticateDoctor };

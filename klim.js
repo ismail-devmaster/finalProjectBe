@@ -10,6 +10,8 @@ dotenv.config();
 // Import routes
 const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const actionRoutes = require("./routes/actionRoutes");
+// const appointmentRoutes = require("./routes/appointmentRoutes");
 
 // Initialize Express app
 const app = express();
@@ -32,6 +34,8 @@ app.use(passport.initialize());
 // Mount routes
 app.use("/auth", authRoutes);
 app.use("/admin", adminRoutes);
+app.use("/actions", actionRoutes);
+// app.use("/appointments", appointmentRoutes);
 
 // Start the server
 const PORT = process.env.PORT || 4000;

@@ -102,6 +102,11 @@ const getAllReceptionists = async () => {
 
 const getAllUsers = async () => {
   return await prisma.user.findMany({
+    where: {
+      role: {
+        in: ["PATIENT", "DOCTOR", "RECEPTIONIST"],
+      },
+    },
     include: {
       patient: true,
       doctor: true,
