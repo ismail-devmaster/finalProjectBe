@@ -37,36 +37,6 @@ exports.deleteUser = async (req, res) => {
   }
 };
 
-exports.getAllPatients = async (req, res) => {
-  try {
-    const patients = await adminService.getAllPatients();
-    res.json({ patients });
-  } catch (error) {
-    console.error("Error fetching patients:", error);
-    res.status(500).json({ error: "Failed to fetch patients" });
-  }
-};
-
-exports.getAllDoctors = async (req, res) => {
-  try {
-    const doctors = await adminService.getAllDoctors();
-    res.json({ doctors });
-  } catch (error) {
-    console.error("Error fetching doctors:", error);
-    res.status(500).json({ error: "Failed to fetch doctors" });
-  }
-};
-
-exports.getAllReceptionists = async (req, res) => {
-  try {
-    const receptionists = await adminService.getAllReceptionists();
-    res.json({ receptionists });
-  } catch (error) {
-    console.error("Error fetching receptionists:", error);
-    res.status(500).json({ error: "Failed to fetch receptionists" });
-  }
-};
-
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await adminService.getAllUsers();

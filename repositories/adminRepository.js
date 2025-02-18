@@ -82,24 +82,6 @@ const deleteUserAndRelated = async (userId) => {
   return await prisma.user.delete({ where: { id: userId } });
 };
 
-const getAllPatients = async () => {
-  return await prisma.patient.findMany({
-    include: { user: true }, // Include user details if needed
-  });
-};
-
-const getAllDoctors = async () => {
-  return await prisma.doctor.findMany({
-    include: { user: true },
-  });
-};
-
-const getAllReceptionists = async () => {
-  return await prisma.receptionist.findMany({
-    include: { user: true },
-  });
-};
-
 const getAllUsers = async () => {
   return await prisma.user.findMany({
     where: {
@@ -118,8 +100,5 @@ const getAllUsers = async () => {
 module.exports = {
   updateUserRoleAndRelated,
   deleteUserAndRelated,
-  getAllPatients,
-  getAllDoctors,
-  getAllReceptionists,
   getAllUsers,
 };

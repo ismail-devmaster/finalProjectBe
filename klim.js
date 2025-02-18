@@ -12,6 +12,9 @@ const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const actionRoutes = require("./routes/actionRoutes");
 const appointmentRoutes = require("./routes/appointmentRoutes");
+const doctorRoutes = require("./routes/doctorRoutes");
+const patientRoutes = require("./routes/patientRoutes");
+const appointmentTypeRoutes = require("./routes/appointmentTypeRoutes");
 
 // Initialize Express app
 const app = express();
@@ -36,6 +39,9 @@ app.use("/auth", authRoutes);
 app.use("/admin", adminRoutes);
 app.use("/actions", actionRoutes);
 app.use("/appointments", appointmentRoutes);
+app.use("/doctors", doctorRoutes);
+app.use("/patients", patientRoutes);
+app.use("/appointmentType", appointmentTypeRoutes);
 
 // Start the server
 const PORT = process.env.PORT || 4000;

@@ -1,41 +1,29 @@
 const express = require("express");
 const router = express.Router();
 const actionController = require("../controllers/actionController");
-const { authenticatePatient, authenticateDoctor } = require("../middlewares/authMiddleware");
+const {
+  authenticatePatient,
+  authenticateDoctor,
+} = require("../middlewares/authMiddleware");
 
-// For POST /actions
-router.post("/", 
-  authenticatePatient, actionController.createAction,
-  authenticateDoctor, actionController.createAction,
-  (req, res) => res.status(403).json({ error: "Access restricted to patients or doctors" })
-);
+// POST /actions
+router.post("/", authenticatePatient, actionController.createAction);
+router.post("/", authenticateDoctor, actionController.createAction);
 
-// For GET /actions
-router.get("/",
-  authenticatePatient, actionController.getAllActions,
-  authenticateDoctor, actionController.getAllActions,
-  (req, res) => res.status(403).json({ error: "Access restricted to patients or doctors" })
-);
+// GET /actions
+router.get("/", authenticatePatient, actionController.getAllActions);
+router.get("/", authenticateDoctor, actionController.getAllActions);
 
-// For GET /actions/:id
-router.get("/:id",
-  authenticatePatient, actionController.getActionById,
-  authenticateDoctor, actionController.getActionById,
-  (req, res) => res.status(403).json({ error: "Access restricted to patients or doctors" })
-);
+// GET /actions/:id
+router.get("/:id", authenticatePatient, actionController.getActionById);
+router.get("/:id", authenticateDoctor, actionController.getActionById);
 
-// For PUT /actions/:id
-router.put("/:id",
-  authenticatePatient, actionController.updateAction,
-  authenticateDoctor, actionController.updateAction,
-  (req, res) => res.status(403).json({ error: "Access restricted to patients or doctors" })
-);
+// PUT /actions/:id
+router.put("/:id", authenticatePatient, actionController.updateAction);
+router.put("/:id", authenticateDoctor, actionController.updateAction);
 
-// For DELETE /actions/:id
-router.delete("/:id",
-  authenticatePatient, actionController.deleteAction,
-  authenticateDoctor, actionController.deleteAction,
-  (req, res) => res.status(403).json({ error: "Access restricted to patients or doctors" })
-);
+// DELETE /actions/:id
+router.delete("/:id", authenticatePatient, actionController.deleteAction);
+router.delete("/:id", authenticateDoctor, actionController.deleteAction);
 
 module.exports = router;
