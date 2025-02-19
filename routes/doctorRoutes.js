@@ -1,8 +1,14 @@
 const express = require("express");
 const router = express.Router();
 const doctorController = require("../controllers/doctorController");
-const { authenticatePatient, authenticateDoctor, authenticateReceptionist, authenticateAdmin } = require("../middlewares/authMiddleware");
+const {
+  authenticatePatient,
+  authenticateDoctor,
+  authenticateReceptionist,
+  authenticateAdmin,
+} = require("../middlewares/authMiddleware");
 
+router.get("/", doctorController.getAllDoctors);
 router.get("/", authenticatePatient, doctorController.getAllDoctors);
 router.get("/", authenticateDoctor, doctorController.getAllDoctors);
 router.get("/", authenticateReceptionist, doctorController.getAllDoctors);

@@ -5,6 +5,13 @@ const getAllDoctors = async () => {
     include: {
       appointments: true,
       payments: true,
+      user: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+        },
+      },
     },
   });
 };
@@ -15,6 +22,13 @@ const getDoctorById = async (id) => {
     include: {
       appointments: true,
       payments: true,
+      user: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+        },
+      },
     },
   });
 };
