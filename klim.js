@@ -15,6 +15,7 @@ const appointmentRoutes = require("./routes/appointmentRoutes");
 const doctorRoutes = require("./routes/doctorRoutes");
 const patientRoutes = require("./routes/patientRoutes");
 const appointmentTypeRoutes = require("./routes/appointmentTypeRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
 
 // Initialize Express app
 const app = express();
@@ -42,6 +43,8 @@ app.use("/appointments", appointmentRoutes);
 app.use("/doctors", doctorRoutes);
 app.use("/patients", patientRoutes);
 app.use("/appointmentType", appointmentTypeRoutes);
+app.use("/payments", paymentRoutes);
+
 
 // Start the server
 const PORT = process.env.PORT || 4000;
