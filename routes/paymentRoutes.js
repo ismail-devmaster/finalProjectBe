@@ -12,7 +12,6 @@ const {
 router.post("/", authenticateDoctor, paymentController.createPayment);
 
 // GET /payments
-router.get("/", paymentController.getAllPayments);
 router.get("/", authenticatePatient, paymentController.getAllPayments);
 router.get("/", authenticateDoctor, paymentController.getAllPayments);
 router.get("/", authenticateReceptionist, paymentController.getAllPayments);

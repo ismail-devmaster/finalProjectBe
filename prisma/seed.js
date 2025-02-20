@@ -1,188 +1,193 @@
-const { PrismaClient } = require('@prisma/client')
-const prisma = new PrismaClient()
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
 
 async function main() {
-  // Seed enum-like tables with upsert operations
-
-  // Seed Sex table
+  // Seed Sex records
   const maleSex = await prisma.sex.upsert({
-    where: { gender: 'MALE' },
+    where: { gender: "MALE" },
     update: {},
-    create: { gender: 'MALE' }
-  })
-
+    create: { gender: "MALE" },
+  });
   const femaleSex = await prisma.sex.upsert({
-    where: { gender: 'FEMALE' },
+    where: { gender: "FEMALE" },
     update: {},
-    create: { gender: 'FEMALE' }
-  })
+    create: { gender: "FEMALE" },
+  });
 
-  // Seed AppointmentStatus table
+  // Seed AppointmentStatus records
   const waitingStatus = await prisma.appointmentStatus.upsert({
-    where: { status: 'WAITING' },
+    where: { status: "WAITING" },
     update: {},
-    create: { status: 'WAITING' }
-  })
-
+    create: { status: "WAITING" },
+  });
   const upcomingStatus = await prisma.appointmentStatus.upsert({
-    where: { status: 'UPCOMING' },
+    where: { status: "UPCOMING" },
     update: {},
-    create: { status: 'UPCOMING' }
-  })
-
+    create: { status: "UPCOMING" },
+  });
   const completedStatus = await prisma.appointmentStatus.upsert({
-    where: { status: 'COMPLETED' },
+    where: { status: "COMPLETED" },
     update: {},
-    create: { status: 'COMPLETED' }
-  })
+    create: { status: "COMPLETED" },
+  });
 
-  // Seed AppointmentType table
-  const consultationType = await prisma.appointmentType.upsert({
-    where: { type: 'Consultation' },
+  // Seed AppointmentType records
+  const generalType = await prisma.appointmentType.upsert({
+    where: { type: "GENERAL" },
     update: {},
-    create: { type: 'Consultation' }
-  })
+    create: { type: "GENERAL" },
+  });
+  const specialistType = await prisma.appointmentType.upsert({
+    where: { type: "SPECIALIST" },
+    update: {},
+    create: { type: "SPECIALIST" },
+  });
+  const followUpType = await prisma.appointmentType.upsert({
+    where: { type: "FOLLOW_UP" },
+    update: {},
+    create: { type: "FOLLOW_UP" },
+  });
+  const emergencyType = await prisma.appointmentType.upsert({
+    where: { type: "EMERGENCY" },
+    update: {},
+    create: { type: "EMERGENCY" },
+  });
 
-  // Seed PaymentStatus table
+  // Seed PaymentStatus records
   const pendingPaymentStatus = await prisma.paymentStatus.upsert({
-    where: { status: 'PENDING' },
+    where: { status: "PENDING" },
     update: {},
-    create: { status: 'PENDING' }
-  })
-
+    create: { status: "PENDING" },
+  });
   const paidPaymentStatus = await prisma.paymentStatus.upsert({
-    where: { status: 'PAID' },
+    where: { status: "PAID" },
     update: {},
-    create: { status: 'PAID' }
-  })
-
+    create: { status: "PAID" },
+  });
   const cancelledPaymentStatus = await prisma.paymentStatus.upsert({
-    where: { status: 'CANCELLED' },
+    where: { status: "CANCELLED" },
     update: {},
-    create: { status: 'CANCELLED' }
-  })
+    create: { status: "CANCELLED" },
+  });
 
-  // Create a sample Patient user
+  // Create a Patient user and Patient record
   const patientUser = await prisma.user.create({
     data: {
-      email: 'patient@example.com',
-      password: 'password', // Remember: hash passwords in production
-      firstName: 'John',
-      lastName: 'Doe',
-      dateOfBirth: new Date('1990-01-01'),
-      phone: '1234567890',
-      sexId: maleSex.id,
-      isVerified: true,
-      role: 'PATIENT'
-    }
-  })
+      email: "patient@example.com",
+      password: "password", // In production, use hashed passwords!
+      firstName: "John",
+      lastName: "Doe",
+      dateOfBirth: new Date("1990-01-01"),
+      phone: "1234567890",
+      sex: { connect: { gender: maleSex.gender } },
+      role: "PATIENT",
+    },
+  });
 
-  const patient = await prisma.patient.create({
+  await prisma.patient.create({
     data: {
       userId: patientUser.id,
-      medicalHistory: 'No significant medical history'
-    }
-  })
+      medicalHistory: "No significant history",
+    },
+  });
 
-  // Create a sample Doctor user
+  // Create a Doctor user and Doctor record
   const doctorUser = await prisma.user.create({
     data: {
-      email: 'doctor@example.com',
-      password: 'password',
-      firstName: 'Alice',
-      lastName: 'Smith',
-      dateOfBirth: new Date('1985-05-05'),
-      phone: '0987654321',
-      sexId: femaleSex.id,
-      isVerified: true,
-      role: 'DOCTOR'
-    }
-  })
+      email: "doctor@example.com",
+      password: "password",
+      firstName: "Alice",
+      lastName: "Smith",
+      dateOfBirth: new Date("1980-05-15"),
+      phone: "9876543210",
+      sex: { connect: { gender: femaleSex.gender } },
+      role: "DOCTOR",
+    },
+  });
 
-  const doctor = await prisma.doctor.create({
+  await prisma.doctor.create({
     data: {
-      userId: doctorUser.id
-    }
-  })
+      userId: doctorUser.id,
+    },
+  });
 
-  // Create a sample Receptionist user
+  // Create a Receptionist user and record
   const receptionistUser = await prisma.user.create({
     data: {
-      email: 'receptionist@example.com',
-      password: 'password',
-      firstName: 'Bob',
-      lastName: 'Brown',
-      dateOfBirth: new Date('1992-03-03'),
-      phone: '1112223333',
-      sexId: maleSex.id,
-      isVerified: true,
-      role: 'RECEPTIONIST'
-    }
-  })
+      email: "reception@example.com",
+      password: "password",
+      firstName: "Bob",
+      lastName: "Jones",
+      dateOfBirth: new Date("1985-03-20"),
+      phone: "1112223333",
+      sex: { connect: { gender: maleSex.gender } },
+      role: "RECEPTIONIST",
+    },
+  });
 
-  const receptionist = await prisma.receptionist.create({
+  await prisma.receptionist.create({
     data: {
-      userId: receptionistUser.id
-    }
-  })
+      userId: receptionistUser.id,
+    },
+  });
 
-  // Create a sample Admin user
+  // Create an Admin user and record
   const adminUser = await prisma.user.create({
     data: {
-      email: 'admin@example.com',
-      password: 'password',
-      firstName: 'Eve',
-      lastName: 'White',
-      dateOfBirth: new Date('1980-07-07'),
-      phone: '4445556666',
-      sexId: femaleSex.id,
-      isVerified: true,
-      role: 'ADMIN'
-    }
-  })
+      email: "admin@example.com",
+      password: "password",
+      firstName: "Carol",
+      lastName: "White",
+      dateOfBirth: new Date("1975-07-10"),
+      phone: "4445556666",
+      sex: { connect: { gender: femaleSex.gender } },
+      role: "ADMIN",
+    },
+  });
 
-  const admin = await prisma.admin.create({
+  await prisma.admin.create({
     data: {
-      userId: adminUser.id
-    }
-  })
+      userId: adminUser.id,
+    },
+  });
 
-  // Create a sample Action associated with the Patient
+  // Create an Action record for the patient
   const action = await prisma.action.create({
     data: {
-      name: 'Initial Checkup',
-      patientId: patientUser.id,
-      description: 'Regular checkup',
-      totalPayment: 100.0
-    }
-  })
+      appointmentTypeId: generalType.id,
+      patientId: patientUser.id, // Patient.userId is same as User.id
+      description: "General checkup",
+      totalPayment: 100.0,
+      startDate: new Date(),
+      // endDate can be left undefined if not available
+    },
+  });
 
-  // Create a sample Appointment between the Patient and Doctor
+  // Create an Appointment for the patient with the doctor
   const appointment = await prisma.appointment.create({
     data: {
       patientId: patientUser.id,
       doctorId: doctorUser.id,
-      typeId: consultationType.id,
       actionId: action.id,
       statusId: waitingStatus.id,
-      date: new Date(),
-      time: new Date(),
-      additionalNotes: 'Bring previous records'
-    }
-  })
+      date: new Date(), // Using current date; adjust as needed
+      time: new Date(), // Using current time; adjust as needed
+      additionalNotes: "Follow-up appointment notes",
+    },
+  });
 
-  // Create a sample Queue entry for the Appointment
+  // Create a Queue entry for the appointment
   const queueEntry = await prisma.queue.create({
     data: {
       patientId: patientUser.id,
       appointmentId: appointment.id,
       estimatedWaitTime: 15,
-      estimatedTimeToDoctor: 10,
-      status: 'WAITING'
-    }
-  })
+      estimatedTimeToDoctor: 5,
+      status: "WAITING", // Enum value from QueueStatusEnum
+    },
+  });
 
-  // Create a sample Payment associated with the Action
+  // Create a Payment record for the action
   const payment = await prisma.payment.create({
     data: {
       patientId: patientUser.id,
@@ -192,18 +197,18 @@ async function main() {
       amount: 100.0,
       date: new Date(),
       time: new Date(),
-      description: 'Consultation fee'
-    }
-  })
+      description: "Payment for general checkup",
+    },
+  });
 
-  console.log('Database seeded successfully!')
+  console.log("Seeding finished.");
 }
 
 main()
   .catch((e) => {
-    console.error(e)
-    process.exit(1)
+    console.error(e);
+    process.exit(1);
   })
   .finally(async () => {
-    await prisma.$disconnect()
-  })
+    await prisma.$disconnect();
+  });

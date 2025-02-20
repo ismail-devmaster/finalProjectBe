@@ -24,6 +24,9 @@ const getAppointmentByPatientId = async (id) => {
   return await appointmentRepository.getAppointmentByPatientId(id);
 };
 
+const getAppointmentsByActionId = async (actionId) => {
+  return await appointmentRepository.getAppointmentsByActionId(actionId);
+};
 module.exports = {
   createAppointment,
   updateAppointment,
@@ -31,4 +34,5 @@ module.exports = {
   getAllAppointments,
   getAppointmentById,
   getAppointmentByPatientId,
+  getAppointmentsByActionId,
 };

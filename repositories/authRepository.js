@@ -3,6 +3,7 @@ const prisma = require("../config/database");
 const findUserByEmail = async (email) =>
   await prisma.user.findUnique({ where: { email } });
 
+
 const createUser = async (userData) =>
   await prisma.user.create({ data: userData });
 

@@ -5,7 +5,16 @@ dotenv.config();
 
 exports.signup = async (req, res) => {
   try {
-    const { email, password, firstName, lastName, dateOfBirth, phone, sexId, roleData } = req.body;
+    const {
+      email,
+      password,
+      firstName,
+      lastName,
+      dateOfBirth,
+      phone,
+      sexId,
+      roleData,
+    } = req.body;
     const { user, verificationToken } = await authService.signup({
       email,
       password,
@@ -39,12 +48,15 @@ exports.verifyEmail = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const { user, accessToken, refreshToken } = await authService.login({ email, password });
+    const { user, accessToken, refreshToken } = await authService.login({
+      email,
+      password,
+    });
     res.cookie("authToken", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "Strict",
-      maxAge: 15 * 60 * 1000,
+      maxAge: 120 * 60 * 1000,
     });
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
@@ -174,25 +186,25 @@ exports.completeProfile = async (req, res) => {
     const bcrypt = require("bcryptjs");
     const { generateTokens } = require("../utils/tokenUtil");
     const prisma = require("../config/database");
-    
+
     // Verify the temporary token provided by Google OAuth callback
     const tempPayload = jwt.verify(tempToken, process.env.JWT_TEMP_SECRET);
     const { email, firstName, lastName } = tempPayload;
-    
+
     // Ensure a user with the same email doesn't already exist
     let existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ error: "User already exists" });
     }
-    
+
     // Parse the dateOfBirth (assumed format: YYYY-MM-DD)
     const [year, month, day] = dateOfBirth.split("-");
     const parsedDate = new Date(year, month - 1, day);
-    
+
     // Create a random password (to be reset or changed later)
     const password = Math.random().toString(36).slice(-10);
     const hashedPassword = await bcrypt.hash(password, 10);
-    
+
     // Create the new user using both the Google info and additional fields
     const user = await prisma.user.create({
       data: {
@@ -206,19 +218,18 @@ exports.completeProfile = async (req, res) => {
         phone,
         sexId: parseInt(sexId, 10),
         patient: {
-          create: {
-          },
+          create: {},
         },
       },
     });
-    
+
     // Generate tokens and update the user record with the refresh token
     const { accessToken, refreshToken } = generateTokens(user.id, user.role);
     await prisma.user.update({
       where: { id: user.id },
       data: { refreshToken },
     });
-    
+
     res.cookie("authToken", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

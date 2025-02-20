@@ -10,17 +10,24 @@ const getAllPatients = async () => {
     },
   });
 };
-
 const getPatientById = async (id) => {
-  return await prisma.patient.findUnique({
-    where: { id: Number(id) },
-    include: {
-      appointments: true,
-      payments: true,
-      actions: true,
-      queueEntries: true,
-    },
-  });
+  try {
+    const parsedId = Number(id); // Only do this if id is supposed to be a number
+    const patient = await prisma.patient.findUnique({
+      where: { userId: parsedId },
+      include: {
+        appointments: true,
+        payments: true,
+        actions: true,
+        queueEntries: true,
+      },
+    });
+    console.log("Fetched patient:", patient);
+    return patient;
+  } catch (error) {
+    console.error("Error fetching patient:", error);
+    throw error;
+  }
 };
 
 module.exports = { getAllPatients, getPatientById };
