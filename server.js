@@ -12,9 +12,9 @@ const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const actionRoutes = require("./routes/actionRoutes");
 const appointmentRoutes = require("./routes/appointmentRoutes");
+const appointmentTypeRoutes = require("./routes/appointmentTypeRoutes");
 const doctorRoutes = require("./routes/doctorRoutes");
 const patientRoutes = require("./routes/patientRoutes");
-const appointmentTypeRoutes = require("./routes/appointmentTypeRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 
 // Initialize Express app
@@ -40,11 +40,10 @@ app.use("/auth", authRoutes);
 app.use("/admin", adminRoutes);
 app.use("/actions", actionRoutes);
 app.use("/appointments", appointmentRoutes);
+app.use("/appointmentType", appointmentTypeRoutes);
 app.use("/doctors", doctorRoutes);
 app.use("/patients", patientRoutes);
-app.use("/appointmentType", appointmentTypeRoutes);
 app.use("/payments", paymentRoutes);
-
 
 // Start the server
 const PORT = process.env.PORT || 4000;

@@ -12,6 +12,10 @@ const getActionById = async (id) => {
   return await actionRepository.getActionById(id);
 };
 
+const getActionsByPatientId = async (patientId) => {
+  return await actionRepository.getActionsByPatientId(patientId);
+};
+
 const updateAction = async (id, updateData) => {
   return await actionRepository.updateAction(id, updateData);
 };
@@ -24,6 +28,7 @@ module.exports = {
   createAction,
   getAllActions,
   getActionById,
+  getActionsByPatientId,
   updateAction,
   deleteAction,
 };

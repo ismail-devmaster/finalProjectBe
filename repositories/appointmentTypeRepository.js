@@ -10,27 +10,7 @@ const getAppointmentTypeById = async (id) => {
   });
 };
 
-const createAppointmentType = async (data) => {
-  return await prisma.appointmentType.create({ data });
-};
-
-const updateAppointmentType = async (id, updateData) => {
-  return await prisma.appointmentType.update({
-    where: { id: Number(id) },
-    data: updateData,
-  });
-};
-
-const deleteAppointmentType = async (id) => {
-  return await prisma.appointmentType.delete({
-    where: { id: Number(id) },
-  });
-};
-
 module.exports = {
   getAllAppointmentTypes,
   getAppointmentTypeById,
-  createAppointmentType,
-  updateAppointmentType,
-  deleteAppointmentType,
 };

@@ -36,6 +36,17 @@ exports.getActionById = async (req, res) => {
   }
 };
 
+exports.getActionsByPatientId = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const actions = await actionService.getActionsByPatientId(patientId);
+    res.json({ actions });
+  } catch (error) {
+    console.error("Error fetching actions by patient id:", error);
+    res.status(500).json({ error: "Failed to fetch actions by patient id" });
+  }
+};
+
 exports.updateAction = async (req, res) => {
   try {
     const action = await actionService.updateAction(req.params.id, req.body);

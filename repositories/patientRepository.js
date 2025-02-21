@@ -30,4 +30,11 @@ const getPatientById = async (id) => {
   }
 };
 
-module.exports = { getAllPatients, getPatientById };
+const getPatientId = async (userId) => {
+  return await prisma.patient.findUnique({
+    where: { userId: Number(userId) },
+    select: { userId: true }  // only return the id
+  });
+};
+
+module.exports = { getAllPatients, getPatientById, getPatientId };

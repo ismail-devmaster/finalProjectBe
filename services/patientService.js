@@ -9,6 +9,9 @@ const getPatientById = async (id) => {
   return await patientRepository.getPatientById(id);
 };
 
+const getPatientId = async (userId) => {
+  return await patientRepository.getPatientId(userId);
+};
 
 
-module.exports = { getAllPatients, getPatientById };
+module.exports = { getAllPatients, getPatientById, getPatientId };
