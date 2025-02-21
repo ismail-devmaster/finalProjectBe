@@ -10,6 +10,7 @@ const getAllActions = async () => {
       patient: true,
       appointments: true,
       payments: true,
+      appointmentType: true,
     },
   });
 };
@@ -21,6 +22,7 @@ const getActionById = async (id) => {
       patient: true,
       appointments: true,
       payments: true,
+      appointmentType: true,
     },
   });
 };
