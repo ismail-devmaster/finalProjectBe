@@ -2,54 +2,23 @@ const express = require("express");
 const router = express.Router();
 const appointmentTypeController = require("../controllers/appointmentTypeController");
 const {
-  authenticateAdmin,
-  authenticateDoctor,
-  authenticateReceptionist,
-  authenticatePatient,
+  authenticateUser,
+  authorizeRoles,
 } = require("../middlewares/authMiddleware");
 
-// Endpoint to get all appointment types
-
+// GET /appointment-types - allowed for RECEPTIONIST, PATIENT, DOCTOR, and ADMIN
 router.get(
   "/",
-  authenticatePatient,
-  appointmentTypeController.getAllAppointmentTypes
-);
-router.get(
-  "/",
-  authenticateDoctor,
-  appointmentTypeController.getAllAppointmentTypes
-);
-router.get(
-  "/",
-  authenticateReceptionist,
-  appointmentTypeController.getAllAppointmentTypes
-);
-router.get(
-  "/",
-  authenticateAdmin,
+  authenticateUser,
+  authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR", "ADMIN"),
   appointmentTypeController.getAllAppointmentTypes
 );
 
-// Endpoint to get a specific appointment type by id
+// GET /appointment-types/:id - allowed for RECEPTIONIST, PATIENT, DOCTOR, and ADMIN
 router.get(
   "/:id",
-  authenticatePatient,
-  appointmentTypeController.getAppointmentTypeById
-);
-router.get(
-  "/:id",
-  authenticateDoctor,
-  appointmentTypeController.getAppointmentTypeById
-);
-router.get(
-  "/:id",
-  authenticateReceptionist,
-  appointmentTypeController.getAppointmentTypeById
-);
-router.get(
-  "/:id",
-  authenticateAdmin,
+  authenticateUser,
+  authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR", "ADMIN"),
   appointmentTypeController.getAppointmentTypeById
 );
 

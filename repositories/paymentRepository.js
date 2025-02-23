@@ -7,7 +7,17 @@ const createPayment = async (data) => {
 const getAllPayments = async () => {
   return await prisma.payment.findMany({
     include: {
-      doctor: true,
+      doctor: {
+        select: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      },
       patient: true,
       status: true,
       action: true,
@@ -19,7 +29,17 @@ const getPaymentById = async (id) => {
   return await prisma.payment.findUnique({
     where: { id: Number(id) },
     include: {
-      doctor: true,
+      doctor: {
+        select: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      },
       patient: true,
       status: true,
       action: true,
@@ -40,10 +60,33 @@ const deletePayment = async (id) => {
   });
 };
 
+const getPaymentsByActionId = async (actionId) => {
+  return await prisma.payment.findMany({
+    where: { actionId: Number(actionId) },
+    include: {
+      doctor: {
+        select: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      },
+      patient: true,
+      status: true,
+      action: true,
+    },
+  });
+};
+
 module.exports = {
   createPayment,
   getAllPayments,
   getPaymentById,
   updatePayment,
   deletePayment,
+  getPaymentsByActionId,
 };

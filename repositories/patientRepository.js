@@ -3,10 +3,21 @@ const prisma = require("../config/database");
 const getAllPatients = async () => {
   return await prisma.patient.findMany({
     include: {
-      appointments: true,
-      payments: true,
-      actions: true,
-      queueEntries: true,
+      user: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          dateOfBirth: true,
+          phone: true,
+        
+        email: true,
+      sex: {
+        select: {
+                gender: {select: { gender: true }},
+              },
+      }},
+      },
     },
   });
 };
@@ -16,10 +27,21 @@ const getPatientById = async (id) => {
     const patient = await prisma.patient.findUnique({
       where: { userId: parsedId },
       include: {
-        appointments: true,
-        payments: true,
-        actions: true,
-        queueEntries: true,
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            dateOfBirth: true,
+            phone: true,
+            email: true,
+            sex: {
+              select: {
+                gender: {select: { gender: true }},
+              },
+            }
+          },
+        },
       },
     });
     console.log("Fetched patient:", patient);
@@ -33,7 +55,7 @@ const getPatientById = async (id) => {
 const getPatientId = async (userId) => {
   return await prisma.patient.findUnique({
     where: { userId: Number(userId) },
-    select: { userId: true }  // only return the id
+    select: { userId: true }, // only return the id
   });
 };
 

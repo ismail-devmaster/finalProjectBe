@@ -2,48 +2,56 @@ const express = require("express");
 const router = express.Router();
 const actionController = require("../controllers/actionController");
 const {
-  authenticatePatient,
-  authenticateDoctor,
-  authenticateReceptionist,
+  authenticateUser,
+  authorizeRoles,
 } = require("../middlewares/authMiddleware");
 
-// POST /actions
-router.post("/", authenticatePatient, actionController.createAction);
-router.post("/", authenticateDoctor, actionController.createAction);
-
-// GET /actions
-router.get("/", authenticatePatient, actionController.getAllActions);
-router.get("/", authenticateDoctor, actionController.getAllActions);
-router.get("/", authenticateReceptionist, actionController.getAllActions);
-
-// GET /actions/:id
-router.get("/:id", authenticatePatient, actionController.getActionById);
-router.get("/:id", authenticateDoctor, actionController.getActionById);
-router.get("/:id", authenticateReceptionist, actionController.getActionById);
-
-// GET /actions/patient/:patientId
-router.get(
-  "/patient/:patientId",
-  authenticatePatient,
-  actionController.getActionsByPatientId
-);
-router.get(
-  "/patient/:patientId",
-  authenticateDoctor,
-  actionController.getActionsByPatientId
-);
-router.get(
-  "/patient/:patientId",
-  authenticateReceptionist,
-  actionController.getActionsByPatientId
+// POST /actions - allowed for PATIENT and DOCTOR
+router.post(
+  "/",
+  authenticateUser,
+  authorizeRoles("PATIENT", "DOCTOR"),
+  actionController.createAction
 );
 
-// PUT /actions/:id
-router.put("/:id", authenticatePatient, actionController.updateAction);
-router.put("/:id", authenticateDoctor, actionController.updateAction);
+// GET /actions - allowed for PATIENT, DOCTOR, and RECEPTIONIST
+router.get(
+  "/",
+  authenticateUser,
+  authorizeRoles("PATIENT", "DOCTOR", "RECEPTIONIST"),
+  actionController.getAllActions
+);
 
-// DELETE /actions/:id
-router.delete("/:id", authenticatePatient, actionController.deleteAction);
-router.delete("/:id", authenticateDoctor, actionController.deleteAction);
+// GET /actions/:id - allowed for PATIENT, DOCTOR, and RECEPTIONIST
+router.get(
+  "/:id",
+  authenticateUser,
+  authorizeRoles("PATIENT", "DOCTOR", "RECEPTIONIST"),
+  actionController.getActionById
+);
+
+// GET /actions/patient/:patientId - allowed for RECEPTIONIST, PATIENT, and DOCTOR
+router.get(
+  "/patient/:patientId",
+  authenticateUser,
+  authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR"),
+  actionController.getActionsByPatientId
+);
+
+// PUT /actions/:id - allowed for PATIENT and DOCTOR
+router.put(
+  "/:id",
+  authenticateUser,
+  authorizeRoles("PATIENT", "DOCTOR"),
+  actionController.updateAction
+);
+
+// DELETE /actions/:id - allowed for PATIENT and DOCTOR
+router.delete(
+  "/:id",
+  authenticateUser,
+  authorizeRoles("PATIENT", "DOCTOR"),
+  actionController.deleteAction
+);
 
 module.exports = router;

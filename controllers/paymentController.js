@@ -54,3 +54,15 @@ exports.deletePayment = async (req, res) => {
     res.status(500).json({ error: "Failed to delete payment" });
   }
 };
+
+exports.getPaymentsByActionId = async (req, res) => {
+  try {
+    const { actionId } = req.params;
+    const payments = await paymentService.getPaymentsByActionId(actionId);
+    res.json({ payments });
+  } catch (error) {
+    console.error("Error fetching payments by actionId:", error);
+    res.status(500).json({ error: "Failed to fetch payments by actionId" });
+  }
+};
+

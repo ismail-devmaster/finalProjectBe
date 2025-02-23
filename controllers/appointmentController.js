@@ -96,3 +96,14 @@ exports.getAppointmentsByActionId = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch appointments by actionId" });
   }
 };
+
+exports.getAppointmentsWithWaitingStatus = async (req, res) => {
+  try {
+    const appointments =
+      await appointmentService.getAppointmentsWithWaitingStatus();
+    res.json({ appointments });
+  } catch (error) {
+    console.error("Error fetching waiting appointments:", error);
+    res.status(500).json({ error: "Failed to fetch waiting appointments" });
+  }
+};

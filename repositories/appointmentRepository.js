@@ -42,11 +42,48 @@ const deleteAppointment = async (id) => {
 const getAllAppointments = async () => {
   return await prisma.appointment.findMany({
     include: {
-      doctor: true,
-      patient: true,
       status: true,
-      action: true,
       queueEntries: true,
+      action: {
+        select: {
+          appointmentType: {
+            select: {
+              id: true,
+              type: true,
+            },
+          },
+        },
+      },
+      patient: {
+        select: {
+          medicalHistory: true,
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              dateOfBirth: true,
+              phone: true,
+              email: true,
+              sex: {
+                select: {
+                  gender: { select: { gender: true } },
+                },
+              },
+            },
+          },
+        },
+      },
+      doctor: {
+        select: {
+          user: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      },
     },
   });
 };
@@ -55,11 +92,48 @@ const getAppointmentById = async (id) => {
   return await prisma.appointment.findUnique({
     where: { id: Number(id) },
     include: {
-      doctor: true,
-      patient: true,
       status: true,
-      action: true,
       queueEntries: true,
+      action: {
+        select: {
+          appointmentType: {
+            select: {
+              id: true,
+              type: true,
+            },
+          },
+        },
+      },
+      patient: {
+        select: {
+          medicalHistory: true,
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              dateOfBirth: true,
+              phone: true,
+              email: true,
+              sex: {
+                select: {
+                  gender: { select: { gender: true } },
+                },
+              },
+            },
+          },
+        },
+      },
+      doctor: {
+        select: {
+          user: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      },
     },
   });
 };
@@ -68,11 +142,48 @@ const getAppointmentByPatientId = async (id) => {
   return await prisma.appointment.findUnique({
     where: { patientId: Number(id) },
     include: {
-      doctor: true,
-      patient: true,
       status: true,
-      action: true,
       queueEntries: true,
+      action: {
+        select: {
+          appointmentType: {
+            select: {
+              id: true,
+              type: true,
+            },
+          },
+        },
+      },
+      patient: {
+        select: {
+          medicalHistory: true,
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              dateOfBirth: true,
+              phone: true,
+              email: true,
+              sex: {
+                select: {
+                  gender: { select: { gender: true } },
+                },
+              },
+            },
+          },
+        },
+      },
+      doctor: {
+        select: {
+          user: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      },
     },
   });
 };
@@ -80,11 +191,102 @@ const getAppointmentsByActionId = async (actionId) => {
   return await prisma.appointment.findMany({
     where: { actionId: Number(actionId) },
     include: {
-      doctor: true,
-      patient: true,
       status: true,
-      action: true,
       queueEntries: true,
+      action: {
+        select: {
+          appointmentType: {
+            select: {
+              id: true,
+              type: true,
+            },
+          },
+        },
+      },
+      patient: {
+        select: {
+          medicalHistory: true,
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              dateOfBirth: true,
+              phone: true,
+              email: true,
+              sex: {
+                select: {
+                  gender: { select: { gender: true } },
+                },
+              },
+            },
+          },
+        },
+      },
+      doctor: {
+        select: {
+          user: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      },
+    },
+  });
+};
+
+const getAppointmentsWithWaitingStatus = async () => {
+  return await prisma.appointment.findMany({
+    where: {
+      status: {
+        status: "WAITING", // This filters appointments where the status field (a relation) has a status value of "WAITING"
+      },
+    },
+    include: {
+      status: true,
+      queueEntries: true,
+      action: {
+        select: {
+          appointmentType: {
+            select: {
+              id: true,
+              type: true,
+            },
+          },
+        },
+      },
+      patient: {
+        select: {
+          medicalHistory: true,
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              dateOfBirth: true,
+              phone: true,
+              email: true,
+              sex: {
+                select: {
+                  gender: { select: { gender: true } },
+                },
+              },
+            },
+          },
+        },
+      },
+      doctor: {
+        select: {
+          user: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      },
     },
   });
 };
@@ -96,4 +298,5 @@ module.exports = {
   getAppointmentById,
   getAppointmentByPatientId,
   getAppointmentsByActionId,
+  getAppointmentsWithWaitingStatus,
 };

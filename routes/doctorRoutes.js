@@ -2,21 +2,24 @@ const express = require("express");
 const router = express.Router();
 const doctorController = require("../controllers/doctorController");
 const {
-  authenticatePatient,
-  authenticateDoctor,
-  authenticateReceptionist,
-  authenticateAdmin,
+  authenticateUser,
+  authorizeRoles,
 } = require("../middlewares/authMiddleware");
 
-router.get("/", doctorController.getAllDoctors);
-router.get("/", authenticatePatient, doctorController.getAllDoctors);
-router.get("/", authenticateDoctor, doctorController.getAllDoctors);
-router.get("/", authenticateReceptionist, doctorController.getAllDoctors);
-router.get("/", authenticateAdmin, doctorController.getAllDoctors);
+// GET /doctors - allowed for RECEPTIONIST, PATIENT, DOCTOR, and ADMIN
+router.get(
+  "/",
+  authenticateUser,
+  authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR", "ADMIN"),
+  doctorController.getAllDoctors
+);
 
-router.get("/:id", authenticatePatient, doctorController.getDoctorById);
-router.get("/:id", authenticateDoctor, doctorController.getDoctorById);
-router.get("/:id", authenticateReceptionist, doctorController.getDoctorById);
-router.get("/:id", authenticateAdmin, doctorController.getDoctorById);
+// GET /doctors/:id - allowed for RECEPTIONIST, PATIENT, DOCTOR, and ADMIN
+router.get(
+  "/:id",
+  authenticateUser,
+  authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR", "ADMIN"),
+  doctorController.getDoctorById
+);
 
 module.exports = router;

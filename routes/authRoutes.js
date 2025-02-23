@@ -5,10 +5,12 @@ const authController = require("../controllers/authController");
 const { authenticateUser } = require("../middlewares/authMiddleware");
 
 // Google OAuth routes
-router.get("/google",
+router.get(
+  "/google",
   passport.authenticate("google", { scope: ["profile", "email"] })
 );
-router.get("/google/callback",
+router.get(
+  "/google/callback",
   passport.authenticate("google", { failureRedirect: "/", session: false }),
   authController.googleCallback
 );

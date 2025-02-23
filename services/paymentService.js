@@ -20,10 +20,15 @@ const deletePayment = async (id) => {
   return await paymentRepository.deletePayment(id);
 };
 
+const getPaymentsByActionId = async (actionId) => {
+  return await paymentRepository.getPaymentsByActionId(actionId);
+};
+
 module.exports = {
   createPayment,
   getAllPayments,
   getPaymentById,
   updatePayment,
   deletePayment,
+  getPaymentsByActionId,
 };

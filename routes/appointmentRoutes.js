@@ -2,91 +2,63 @@ const express = require("express");
 const router = express.Router();
 const appointmentController = require("../controllers/appointmentController");
 const {
-  authenticatePatient,
-  authenticateDoctor,
-  authenticateReceptionist,
+  authenticateUser,
+  authorizeRoles,
 } = require("../middlewares/authMiddleware");
 
-// POST /appointments
-router.post("/", authenticatePatient, appointmentController.createAppointment);
-router.post("/", authenticateDoctor, appointmentController.createAppointment);
+// GET /appointments/waiting - allowed for RECEPTIONIST, PATIENT, DOCTOR
+router.get(
+  "/waiting",
+  authenticateUser,
+  authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR"),
+  appointmentController.getAppointmentsWithWaitingStatus
+);
+
+// POST /appointments - allowed for RECEPTIONIST, DOCTOR, and PATIENT
 router.post(
   "/",
-  authenticateReceptionist,
+  authenticateUser,
+  authorizeRoles("RECEPTIONIST", "DOCTOR", "PATIENT"),
   appointmentController.createAppointment
 );
 
-// PUT /appointments/:id
-router.put("/:id", appointmentController.updateAppointment);
+// PUT /appointments/:id - allowed for RECEPTIONIST, PATIENT, and DOCTOR
 router.put(
   "/:id",
-  authenticatePatient,
-  appointmentController.updateAppointment
-);
-router.put("/:id", authenticateDoctor, appointmentController.updateAppointment);
-router.put(
-  "/:id",
-  authenticateReceptionist,
+  authenticateUser,
+  authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR"),
   appointmentController.updateAppointment
 );
 
-// DELETE /appointments/:id
+// DELETE /appointments/:id - allowed for RECEPTIONIST, PATIENT, and DOCTOR
 router.delete(
   "/:id",
-  authenticatePatient,
-  appointmentController.deleteAppointment
-);
-router.delete(
-  "/:id",
-  authenticateDoctor,
-  appointmentController.deleteAppointment
-);
-router.delete(
-  "/:id",
-  authenticateReceptionist,
+  authenticateUser,
+  authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR"),
   appointmentController.deleteAppointment
 );
 
-// GET /appointments
-router.get("/", authenticatePatient, appointmentController.getAllAppointments);
-router.get("/", authenticateDoctor, appointmentController.getAllAppointments);
+// GET /appointments - allowed for RECEPTIONIST, PATIENT, and DOCTOR
 router.get(
   "/",
-  authenticateReceptionist,
+  authenticateUser,
+  authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR"),
   appointmentController.getAllAppointments
 );
 
-// GET /appointments/:id
+// GET /appointments/:id - allowed for RECEPTIONIST, PATIENT, and DOCTOR
 router.get(
   "/:id",
-  authenticatePatient,
-  appointmentController.getAppointmentById
-);
-router.get(
-  "/:id",
-  authenticateDoctor,
-  appointmentController.getAppointmentById
-);
-router.get(
-  "/:id",
-  authenticateReceptionist,
+  authenticateUser,
+  authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR"),
   appointmentController.getAppointmentById
 );
 
-// New endpoint: Get all appointments by actionId
+// GET /appointments/action/:actionId - allowed for RECEPTIONIST, PATIENT, and DOCTOR
 router.get(
   "/action/:actionId",
-  authenticatePatient,
-  appointmentController.getAppointmentsByActionId
-);
-router.get(
-  "/action/:actionId",
-  authenticateDoctor,
-  appointmentController.getAppointmentsByActionId
-);
-router.get(
-  "/action/:actionId",
-  authenticateReceptionist,
+  authenticateUser,
+  authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR"),
   appointmentController.getAppointmentsByActionId
 );
 

@@ -2,31 +2,56 @@ const express = require("express");
 const router = express.Router();
 const paymentController = require("../controllers/paymentController");
 const {
-  authenticatePatient,
-  authenticateDoctor,
-  authenticateReceptionist,
-  authenticateAdmin,
+  authenticateUser,
+  authorizeRoles,
 } = require("../middlewares/authMiddleware");
 
-// POST /payments
-router.post("/", authenticateDoctor, paymentController.createPayment);
+// POST /payments - allowed only for DOCTOR
+router.post(
+  "/",
+  authenticateUser,
+  authorizeRoles("DOCTOR"),
+  paymentController.createPayment
+);
 
-// GET /payments
-router.get("/", authenticatePatient, paymentController.getAllPayments);
-router.get("/", authenticateDoctor, paymentController.getAllPayments);
-router.get("/", authenticateReceptionist, paymentController.getAllPayments);
-router.get("/", authenticateAdmin, paymentController.getAllPayments);
+// GET /payments - allowed for PATIENT, DOCTOR, RECEPTIONIST, and ADMIN
+router.get(
+  "/",
+  authenticateUser,
+  authorizeRoles("PATIENT", "DOCTOR", "RECEPTIONIST", "ADMIN"),
+  paymentController.getAllPayments
+);
 
-// GET /payments/:id
-router.get("/:id", authenticatePatient, paymentController.getPaymentById);
-router.get("/:id", authenticateDoctor, paymentController.getPaymentById);
-router.get("/:id", authenticateReceptionist, paymentController.getPaymentById);
-router.get("/:id", authenticateAdmin, paymentController.getPaymentById);
+// GET /payments/action/:actionId - allowed for RECEPTIONIST, PATIENT, and DOCTOR
+router.get(
+  "/action/:actionId",
+  authenticateUser,
+  authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR"),
+  paymentController.getPaymentsByActionId
+);
 
-// PUT /payments/:id
-router.put("/:id", authenticateDoctor, paymentController.updatePayment);
+// GET /payments/:id - allowed for PATIENT, DOCTOR, RECEPTIONIST, and ADMIN
+router.get(
+  "/:id",
+  authenticateUser,
+  authorizeRoles("PATIENT", "DOCTOR", "RECEPTIONIST", "ADMIN"),
+  paymentController.getPaymentById
+);
 
-// DELETE /payments/:id
-router.delete("/:id", authenticateDoctor, paymentController.deletePayment);
+// PUT /payments/:id - allowed only for DOCTOR
+router.put(
+  "/:id",
+  authenticateUser,
+  authorizeRoles("DOCTOR"),
+  paymentController.updatePayment
+);
+
+// DELETE /payments/:id - allowed only for DOCTOR
+router.delete(
+  "/:id",
+  authenticateUser,
+  authorizeRoles("DOCTOR"),
+  paymentController.deletePayment
+);
 
 module.exports = router;
