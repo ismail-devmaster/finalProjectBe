@@ -1,6 +1,17 @@
 const prisma = require("../config/database");
 
 const createPayment = async (data) => {
+  if (data.date && data.time) {
+    const paymentDate = new Date(data.date);
+    paymentDate.setHours(0, 0, 0, 0); // Reset the time to midnight
+
+    let paymentTime = new Date(paymentDate);
+    const [hours, minutes] = data.time.split(":"); // Assuming time is in "HH:mm" format
+    paymentTime.setHours(hours, minutes, 0, 0);
+
+    data.date = paymentDate;
+    data.time = paymentTime;
+  }
   return await prisma.payment.create({ data });
 };
 
