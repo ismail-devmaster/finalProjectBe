@@ -6,11 +6,16 @@ async function main() {
   // Seed Lookup Tables
   // ----------------------------------------------------
   // Seed Sex records
-  const maleSex = await prisma.sex.create({
-    data: { gender: "MALE" },
+  const maleSex = await prisma.sex.upsert({
+    where: { gender: "MALE" },
+    update: {},
+    create: { gender: "MALE" },
   });
-  const femaleSex = await prisma.sex.create({
-    data: { gender: "FEMALE" },
+
+  const femaleSex = await prisma.sex.upsert({
+    where: { gender: "FEMALE" },
+    update: {},
+    create: { gender: "FEMALE" },
   });
 
   // Seed AppointmentStatus records
@@ -61,7 +66,7 @@ async function main() {
       lastName: "Smith",
       dateOfBirth: new Date("1980-05-15"),
       phone: "1111111111",
-      sex: { connect: { gender: "FEMALE" } },
+      sex: { connect: { id: femaleSex.id } },
       role: "DOCTOR",
       doctor: { create: {} },
     },
@@ -76,7 +81,7 @@ async function main() {
       lastName: "Doe",
       dateOfBirth: new Date("1990-01-01"),
       phone: "2222222222",
-      sex: { connect: { gender: "MALE" } },
+      sex: { connect: { id: maleSex.id  } },
       role: "PATIENT",
       patient: { create: { medicalHistory: "No allergies" } },
     },
@@ -90,7 +95,7 @@ async function main() {
       lastName: "Doe",
       dateOfBirth: new Date("1992-02-02"),
       phone: "3333333333",
-      sex: { connect: { gender: "FEMALE" } },
+      sex: { connect: { id: femaleSex.id } },
       role: "PATIENT",
       patient: { create: { medicalHistory: "Diabetic" } },
     },
@@ -105,7 +110,7 @@ async function main() {
       lastName: "Brown",
       dateOfBirth: new Date("1985-03-03"),
       phone: "4444444444",
-      sex: { connect: { gender: "MALE" } },
+      sex: { connect: { id: maleSex.id } },
       role: "RECEPTIONIST",
       receptionist: { create: {} },
     },
@@ -120,7 +125,7 @@ async function main() {
       lastName: "Green",
       dateOfBirth: new Date("1975-04-04"),
       phone: "5555555555",
-      sex: { connect: { gender: "MALE" } },
+      sex: { connect: { id: maleSex.id } },
       role: "ADMIN",
       admin: { create: {} },
     },
