@@ -32,6 +32,10 @@ const getAppointmentsWithWaitingStatus = async () => {
   return await appointmentRepository.getAppointmentsWithWaitingStatus();
 };
 
+const getAppointmentsByDoctorId = async (doctorId) => {
+  return await appointmentRepository.getAppointmentsByDoctorId(doctorId);
+};
+
 module.exports = {
   createAppointment,
   updateAppointment,
@@ -41,4 +45,5 @@ module.exports = {
   getAppointmentByPatientId,
   getAppointmentsByActionId,
   getAppointmentsWithWaitingStatus,
+  getAppointmentsByDoctorId,
 };

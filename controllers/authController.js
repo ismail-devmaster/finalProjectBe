@@ -77,13 +77,13 @@ exports.refreshToken = async (req, res) => {
   try {
     const { refreshToken } = req.cookies;
     const tokens = await authService.refreshTokenService(refreshToken);
-    res.cookie("authToken", tokens.accessToken, {
+    res.cookie("authToken", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "Strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 15 * 60 * 1000, // 15 minutes
     });
-    res.cookie("refreshToken", tokens.refreshToken, {
+    res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "Strict",
@@ -153,14 +153,14 @@ exports.googleCallback = async (req, res) => {
     res.cookie("authToken", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      sameSite: "Strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      sameSite: "Strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
     const roleRedirects = {
       ADMIN: "/admin",

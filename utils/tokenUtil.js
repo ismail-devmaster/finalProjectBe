@@ -4,12 +4,12 @@ dotenv.config();
 
 const generateTokens = (userId, role) => {
   const accessToken = jwt.sign({ userId, role }, process.env.JWT_SECRET, {
-    expiresIn: "7d", // Change expiration to 7 days
+    expiresIn: "7d", 
   });
   const refreshToken = jwt.sign(
     { userId, role },
     process.env.REFRESH_TOKEN_SECRET,
-    { expiresIn: "7d" } // Refresh token also set to 7 days
+    { expiresIn: "7d" } 
   );
   return { accessToken, refreshToken };
 };

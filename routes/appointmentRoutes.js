@@ -62,4 +62,12 @@ router.get(
   appointmentController.getAppointmentsByActionId
 );
 
+// GET /appointments/doctor/:doctorId – accessible by allowed roles
+router.get(
+  "/doctor/:doctorId",
+  authenticateUser,
+  authorizeRoles("DOCTOR", "ADMIN"),
+  appointmentController.getAppointmentsByDoctorId
+);
+
 module.exports = router;
