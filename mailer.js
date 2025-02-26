@@ -1,7 +1,7 @@
 const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
-  service: "Gmail", // Use your email provider (e.g., Gmail, Outlook, etc.)
+  service: "Gmail", 
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
@@ -9,14 +9,25 @@ const transporter = nodemailer.createTransport({
 });
 
 async function sendVerificationEmail(email, token) {
-  const verificationLink = `http://localhost:4000/api/verify-email/${token}`;
+  const verificationLink = `${process.env.FRONTEND_URL}/verify-email/${token}`;
 
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: email,
     subject: "Verify Your Email",
-    text: `Please click the following link to verify your email: ${verificationLink}`,
-    html: `<p>Please click the following link to verify your email:</p><a href="${verificationLink}">${verificationLink}</a>`,
+    html: `
+      <div style="font-family: Arial, sans-serif; text-align: center; padding: 20px;">
+        <h2>Welcome to Our Platform!</h2>
+        <p>Click the button below to verify your email:</p>
+        <a href="${verificationLink}" 
+           style="display: inline-block; padding: 10px 20px; background-color: #007bff; 
+                  color: white; text-decoration: none; border-radius: 5px;">
+          Verify Email
+        </a>
+        <p>If you didn’t request this, you can ignore this email.</p>
+        <p>This link will expire in 24 hours.</p>
+      </div>
+    `,
   };
 
   try {

@@ -14,8 +14,10 @@ const generateTokens = (userId, role) => {
   return { accessToken, refreshToken };
 };
 
-const generateVerificationToken = () =>
-  Math.random().toString(36).substring(2, 15) +
-  Math.random().toString(36).substring(2, 15);
+const generateVerificationToken = (userId) => {
+  return jwt.sign({ userId }, process.env.EMAIL_VERIFICATION_SECRET, {
+    expiresIn: "1h", // Expire in 1 hour
+  });
+};
 
 module.exports = { generateTokens, generateVerificationToken };
