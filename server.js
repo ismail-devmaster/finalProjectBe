@@ -31,6 +31,19 @@ app.use(
   })
 );
 
+// Middleware to log requests and responses
+app.use((req, res, next) => {
+  const startTime = Date.now();
+
+  res.on("finish", () => {
+    const duration = Date.now() - startTime;
+    console.log(
+      `[${new Date().toISOString()}] ${req.method} ${req.url} -> ${res.statusCode} (${duration}ms)`
+    );
+  });
+
+  next();
+});
 // Passport configuration and initialization
 require("./config/passport");
 app.use(passport.initialize());
@@ -47,8 +60,10 @@ app.use("/payments", paymentRoutes);
 
 // Start the server
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
+app.listen(PORT, () => {
+  console.log(`Server running at:`);
+  console.log(`➡️ Local:   http://localhost:${PORT}`);
+});
 // Graceful shutdown
 process.on("SIGINT", async () => {
   const prisma = require("./config/database");
