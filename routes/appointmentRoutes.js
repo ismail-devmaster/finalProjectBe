@@ -14,6 +14,14 @@ router.get(
   appointmentController.getAppointmentsWithWaitingStatus
 );
 
+// GET /appointments/upcoming - allowed for RECEPTIONIST, PATIENT, DOCTOR
+router.get(
+  "/upcoming",
+  authenticateUser,
+  authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR"),
+  appointmentController.getAppointmentsWithUpcomingStatus
+);
+
 // POST /appointments - allowed for RECEPTIONIST, DOCTOR, and PATIENT
 router.post(
   "/",
