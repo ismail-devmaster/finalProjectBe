@@ -162,14 +162,28 @@ exports.googleCallback = async (req, res) => {
       sameSite: "Strict",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
-    const roleRedirects = {
-      ADMIN: "/admin",
-      DOCTOR: "/staff/doctor",
-      RECEPTIONIST: "/staff/receptionist",
-      PATIENT: "/patient",
-    };
-    const redirectPath = roleRedirects[user.role] || "/auth/login";
-    return res.redirect(`${process.env.FRONTEND_URL}${redirectPath}`);
+
+    if (user.role === "ADMIN")
+      return res.redirect(`${process.env.FRONTEND_URL}/admin`);
+    else if (user.role === "DOCTOR")
+      return res.redirect(`${process.env.FRONTEND_URL}/staff/doctor`);
+    else if (user.role === "RECEPTIONIST")
+      return res.redirect(`${process.env.FRONTEND_URL}/staff/receptionist`);
+    else if (user.role === "PATIENT")
+      return res.redirect(`${process.env.FRONTEND_URL}/patient`);
+    // const roleRedirects = {
+    //   ADMIN: "/admin",
+    //   DOCTOR: "/staff/doctor",
+    //   RECEPTIONIST: "/staff/receptionist",
+    //   PATIENT: "/patient",
+    // };
+
+    // // Make sure req.user exists before using it
+    // if (!user) {
+    //   return res.redirect(`${process.env.FRONTEND_URL || ""}/auth/login`);
+    // }
+    // const redirectPath = roleRedirects[user.role] || "/auth/login";
+    // return res.redirect(`${process.env.FRONTEND_URL}${redirectPath}`);
   } catch (error) {
     console.error("Google callback error: ", error);
     return res.redirect(`${process.env.FRONTEND_URL}/auth/login`);

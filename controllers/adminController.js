@@ -28,11 +28,12 @@ exports.updateRole = async (req, res) => {
 };
 
 exports.deleteUser = async (req, res) => {
+  const { id } = req.params;
   try {
-    const userId = req.params.id;
-    await adminService.deleteUser(userId);
-    res.json({ message: "User deleted successfully" });
+    const deletedUser = await adminService.deleteUser(id);
+    res.json({ message: "User deleted successfully", user: deletedUser });
   } catch (error) {
+    console.error("Error deleting user:", error);
     res.status(500).json({ error: "Failed to delete user" });
   }
 };
