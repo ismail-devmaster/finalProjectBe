@@ -56,13 +56,13 @@ exports.login = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "Strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "Strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 15 * 60 * 1000,
     });
     res.json({
       message: "Login successful",
@@ -77,17 +77,17 @@ exports.refreshToken = async (req, res) => {
   try {
     const { refreshToken } = req.cookies;
     const tokens = await authService.refreshTokenService(refreshToken);
-    res.cookie("authToken", accessToken, {
+    res.cookie("authToken", tokens.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "Strict",
-      maxAge: 15 * 60 * 1000, // 15 minutes
+      maxAge: 15 * 60 * 1000,
     });
-    res.cookie("refreshToken", refreshToken, {
+    res.cookie("refreshToken", tokens.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "Strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
     res.json({ message: "Tokens refreshed" });
   } catch (error) {
@@ -153,37 +153,23 @@ exports.googleCallback = async (req, res) => {
     res.cookie("authToken", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+      maxAge: 15 * 60 * 1000,
     });
-
-    if (user.role === "ADMIN")
-      return res.redirect(`${process.env.FRONTEND_URL}/admin`);
-    else if (user.role === "DOCTOR")
-      return res.redirect(`${process.env.FRONTEND_URL}/staff/doctor`);
-    else if (user.role === "RECEPTIONIST")
-      return res.redirect(`${process.env.FRONTEND_URL}/staff/receptionist`);
-    else if (user.role === "PATIENT")
-      return res.redirect(`${process.env.FRONTEND_URL}/patient`);
-    // const roleRedirects = {
-    //   ADMIN: "/admin",
-    //   DOCTOR: "/staff/doctor",
-    //   RECEPTIONIST: "/staff/receptionist",
-    //   PATIENT: "/patient",
-    // };
-
-    // // Make sure req.user exists before using it
-    // if (!user) {
-    //   return res.redirect(`${process.env.FRONTEND_URL || ""}/auth/login`);
-    // }
-    // const redirectPath = roleRedirects[user.role] || "/auth/login";
-    // return res.redirect(`${process.env.FRONTEND_URL}${redirectPath}`);
+    const roleRedirects = {
+      ADMIN: "/admin",
+      DOCTOR: "/staff/doctor",
+      RECEPTIONIST: "/staff/receptionist",
+      PATIENT: "/patient",
+    };
+    const redirectPath = roleRedirects[user.role] || "/auth/login";
+    return res.redirect(`${process.env.FRONTEND_URL}${redirectPath}`);
   } catch (error) {
     console.error("Google callback error: ", error);
     return res.redirect(`${process.env.FRONTEND_URL}/auth/login`);
