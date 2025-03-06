@@ -19,6 +19,7 @@ router.put(
   authorizeRoles("ADMIN"),
   adminController.updateRole
 );
+router.delete("/user/:id", adminController.deleteUser);
 router.delete(
   "/user/:id",
   authenticateUser,

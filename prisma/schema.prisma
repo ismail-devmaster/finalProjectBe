@@ -98,8 +98,8 @@ model User {
 }
 
 model Patient {
-  userId         Int           @id
-  user           User          @relation("UserToPatient", fields: [userId], references: [id])
+  userId         Int            @id
+  user           User           @relation("UserToPatient", fields: [userId], references: [id], onDelete: Cascade)
   medicalHistory String?
   appointments   Appointment[]
   payments       Payment[]
@@ -108,10 +108,9 @@ model Patient {
 
   @@map("patients")
 }
-
 model Doctor {
   userId       Int           @id
-  user         User          @relation("UserToDoctor", fields: [userId], references: [id])
+  user         User          @relation("UserToDoctor", fields: [userId], references: [id], onDelete: Cascade)
   appointments Appointment[]
   payments     Payment[]
 
@@ -120,8 +119,8 @@ model Doctor {
 
 model Receptionist {
   userId Int @id
-  user   User   @relation("UserToReceptionist", fields: [userId], references: [id])
-  
+  user   User   @relation("UserToReceptionist", fields: [userId], references: [id], onDelete: Cascade)
+
   @@map("receptionists")
 }
 

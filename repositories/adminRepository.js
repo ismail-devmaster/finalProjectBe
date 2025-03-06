@@ -51,35 +51,10 @@ const updateUserRoleAndRelated = async (userId, newRole) => {
   return await prisma.user.findUnique({ where: { id: userId } });
 };
 
-const deleteUserAndRelated = async (userId) => {
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) {
-    throw new Error("User not found");
-  }
-  // Delete related records depending on user role
-  if (user.role === "PATIENT") {
-    const patientExists = await prisma.patient.findUnique({
-      where: { userId },
-    });
-    if (patientExists) {
-      await prisma.patient.delete({ where: { userId } });
-    }
-  } else if (user.role === "DOCTOR") {
-    const doctorExists = await prisma.doctor.findUnique({ where: { userId } });
-    if (doctorExists) {
-      await prisma.doctor.delete({ where: { userId } });
-    }
-  } else if (user.role === "RECEPTIONIST") {
-    const receptionistExists = await prisma.receptionist.findUnique({
-      where: { userId },
-    });
-    if (receptionistExists) {
-      await prisma.receptionist.delete({ where: { userId } });
-    }
-  }
-
-  // Finally, delete the user itself
-  return await prisma.user.delete({ where: { id: userId } });
+const deleteUserById = async (id) => {
+  return await prisma.user.delete({
+    where: { id: Number(id) },
+  });
 };
 
 const getAllUsers = async () => {
@@ -99,6 +74,6 @@ const getAllUsers = async () => {
 
 module.exports = {
   updateUserRoleAndRelated,
-  deleteUserAndRelated,
+  deleteUserById,
   getAllUsers,
 };
