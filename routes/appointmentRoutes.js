@@ -14,6 +14,14 @@ router.get(
   appointmentController.getAppointmentsWithWaitingStatus
 );
 
+// GET /appointments/upcoming - allowed for RECEPTIONIST, PATIENT, DOCTOR
+router.get(
+  "/upcoming",
+  authenticateUser,
+  authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR"),
+  appointmentController.getAppointmentsWithUpcomingStatus
+);
+
 // POST /appointments - allowed for RECEPTIONIST, DOCTOR, and PATIENT
 router.post(
   "/",
@@ -60,6 +68,14 @@ router.get(
   authenticateUser,
   authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR"),
   appointmentController.getAppointmentsByActionId
+);
+
+// GET /appointments/doctor/:doctorId – accessible by allowed roles
+router.get(
+  "/doctor/:doctorId",
+  authenticateUser,
+  authorizeRoles("DOCTOR", "ADMIN"),
+  appointmentController.getAppointmentsByDoctorId
 );
 
 module.exports = router;

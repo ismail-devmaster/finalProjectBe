@@ -107,3 +107,29 @@ exports.getAppointmentsWithWaitingStatus = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch waiting appointments" });
   }
 };
+
+exports.getAppointmentsWithUpcomingStatus = async (req, res) => {
+  try {
+    const appointments =
+      await appointmentService.getAppointmentsWithUpcomingStatus();
+    res.json({ appointments });
+  } catch (error) {
+    console.error("Error fetching upcoming appointments:", error);
+    res.status(500).json({ error: "Failed to fetch upcoming appointments" });
+  }
+};
+
+exports.getAppointmentsByDoctorId = async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+    const appointments = await appointmentService.getAppointmentsByDoctorId(
+      doctorId
+    );
+    res.json({ appointments });
+  } catch (error) {
+    console.error("Error fetching appointments by doctor id:", error);
+    res
+      .status(500)
+      .json({ error: "Failed to fetch appointments by doctor id" });
+  }
+};

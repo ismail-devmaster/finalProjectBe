@@ -93,32 +93,34 @@ model User {
   admin             Admin?          @relation("UserToAdmin")
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
+
   @@map("users")
 }
 
 model Patient {
-  userId         Int           @id
+  userId         Int            @id
+  user           User           @relation("UserToPatient", fields: [userId], references: [id], onDelete: Cascade)
   medicalHistory String?
   appointments   Appointment[]
   payments       Payment[]
   queueEntries   Queue[]
   actions        Action[]
-  user   User @relation("UserToPatient", fields: [userId], references: [id], onDelete: Cascade)
+
   @@map("patients")
 }
-
 model Doctor {
   userId       Int           @id
+  user         User          @relation("UserToDoctor", fields: [userId], references: [id], onDelete: Cascade)
   appointments Appointment[]
   payments     Payment[]
-  user   User @relation("UserToDoctor", fields: [userId], references: [id], onDelete: Cascade)
+
   @@map("doctors")
 }
 
 model Receptionist {
   userId Int @id
-  user   User   @relation("UserToReceptionist", fields: [userId], references: [id])
-  
+  user   User   @relation("UserToReceptionist", fields: [userId], references: [id], onDelete: Cascade)
+
   @@map("receptionists")
 }
 

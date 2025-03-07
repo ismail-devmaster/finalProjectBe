@@ -15,8 +15,10 @@ async function sendVerificationEmail(email, token) {
     from: process.env.EMAIL_USER,
     to: email,
     subject: "Verify Your Email",
-    text: `Please click the following link to verify your email: ${verificationLink}`,
-    html: `<p>Please click the following link to verify your email:</p><a href="${verificationLink}">${verificationLink}</a>`,
+    text:
+      `Please click the following link to verify your email: ${verificationLink}`,
+    html:
+      `<p>Please click the following link to verify your email:</p><a href="${verificationLink}">${verificationLink}</a>`,
   };
 
   try {

@@ -290,6 +290,104 @@ const getAppointmentsWithWaitingStatus = async () => {
     },
   });
 };
+
+const getAppointmentsWithUpcomingStatus = async () => {
+  return await prisma.appointment.findMany({
+    where: {
+      status: {
+        status: "UPCOMING",
+      },
+    },
+    include: {
+      status: true,
+      queueEntries: true,
+      action: {
+        select: {
+          appointmentType: {
+            select: { id: true, type: true },
+          },
+        },
+      },
+      patient: {
+        select: {
+          medicalHistory: true,
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              dateOfBirth: true,
+              phone: true,
+              email: true,
+              sex: {
+                select: {
+                  gender: { select: { gender: true } },
+                },
+              },
+            },
+          },
+        },
+      },
+      doctor: {
+        select: {
+          user: {
+            select: { firstName: true, lastName: true },
+          },
+        },
+      },
+    },
+  });
+};
+
+const getAppointmentsByDoctorId = async (doctorId) => {
+  return await prisma.appointment.findMany({
+    where: { doctorId: Number(doctorId) },
+    include: {
+      status: true,
+      queueEntries: true,
+      action: {
+        select: {
+          appointmentType: {
+            select: {
+              id: true,
+              type: true,
+            },
+          },
+        },
+      },
+      patient: {
+        select: {
+          medicalHistory: true,
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              dateOfBirth: true,
+              phone: true,
+              email: true,
+              sex: {
+                select: {
+                  gender: { select: { gender: true } },
+                },
+              },
+            },
+          },
+        },
+      },
+      doctor: {
+        select: {
+          user: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      },
+    },
+  });
+};
 module.exports = {
   createAppointment,
   updateAppointment,
@@ -299,4 +397,6 @@ module.exports = {
   getAppointmentByPatientId,
   getAppointmentsByActionId,
   getAppointmentsWithWaitingStatus,
+  getAppointmentsByDoctorId,
+  getAppointmentsWithUpcomingStatus,
 };
