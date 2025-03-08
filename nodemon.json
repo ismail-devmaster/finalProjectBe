@@ -1,0 +1,11 @@
+{
+  "watch": [
+    "."
+  ],
+  "ext": "js,json",
+  "exec": "node server.js",
+  "verbose": true,
+  "events": {
+    "restart": "echo '[Nodemon] Restarting due to file changes...'"
+  }
+}
