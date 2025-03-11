@@ -50,6 +50,12 @@ app.use("/appointmentType", appointmentTypeRoutes);
 app.use("/doctors", doctorRoutes);
 app.use("/patients", patientRoutes);
 app.use("/payments", paymentRoutes);
+app.use("/inventory", inventoryRoutes);
+app.use("/categories", categoryRoutes);
+app.use("/units", unitRoutes);
+app.use("/tasks", taskRoutes);
+app.use("/task-status", taskStatusRoutes);
+app.use("/task-priority", taskPriorityRoutes);
 
 // Middleware to log requests and responses
 app.use((req, res, next) => {

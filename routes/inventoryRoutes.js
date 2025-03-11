@@ -1,0 +1,41 @@
+const express = require("express");
+const router = express.Router();
+const inventoryController = require("../controllers/inventoryController");
+const {
+  authenticateUser,
+  authorizeRoles,
+} = require("../middlewares/authMiddleware");
+
+// Protect all inventory routes for admin access only
+router.post(
+  "/",
+  authenticateUser,
+  authorizeRoles("ADMIN"),
+  inventoryController.createInventory
+);
+router.get(
+  "/",
+  authenticateUser,
+  authorizeRoles("ADMIN", "DOCTOR"),
+  inventoryController.getAllInventories
+);
+router.get(
+  "/:id",
+  authenticateUser,
+  authorizeRoles("ADMIN", "DOCTOR"),
+  inventoryController.getInventoryById
+);
+router.put(
+  "/:id",
+  authenticateUser,
+  authorizeRoles("ADMIN", "DOCTOR"),
+  inventoryController.updateInventory
+);
+router.delete(
+  "/:id",
+  authenticateUser,
+  authorizeRoles("ADMIN", "DOCTOR", "RECEPTIONIST"),
+  inventoryController.deleteInventory
+);
+
+module.exports = router;

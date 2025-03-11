@@ -8,7 +8,6 @@ generator client {
 }
 
 enum Role {
-  USER
   PATIENT
   DOCTOR
   RECEPTIONIST
@@ -45,6 +44,32 @@ enum AppointmentTypeEnum {
   SPECIALIST
   FOLLOW_UP
   EMERGENCY
+}
+
+enum InventoryUnit {
+  PCS
+  BOXES
+  SETS
+  PACKS
+  BOTTLES
+}
+
+enum InventoryStatus {
+  IN_STOCK
+  LOW_STOCK
+  OUT_OF_STOCK
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum TaskPriority {
+  HIGH
+  MEDIUM
+  LOW
 }
 
 model Sex {
@@ -91,6 +116,8 @@ model User {
   doctor            Doctor?         @relation("UserToDoctor")
   receptionist      Receptionist?   @relation("UserToReceptionist")
   admin             Admin?          @relation("UserToAdmin")
+  assigneeTasks  Task[]   @relation("UserToAssignee")
+  assignorTasks  Task[]   @relation("UserToAssignor")
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
@@ -143,6 +170,8 @@ model Action {
   appointmentType      AppointmentType   @relation(fields: [appointmentTypeId], references: [id], onDelete: Cascade)
   appointments         Appointment[]
   payments             Payment[]
+  isCompleted          Boolean           @default(false)
+  completedAt DateTime?
 }
 
 model Appointment {
@@ -186,4 +215,39 @@ model Payment {
   patient     Patient       @relation(fields: [patientId], references: [userId], onDelete: Cascade)
   status      PaymentStatus @relation(fields: [statusId], references: [id])
   action      Action        @relation(fields: [actionId], references: [id], onDelete: Cascade)
+}
+
+model Category {
+  id          Int         @id @default(autoincrement())
+  name        String      @unique
+  inventories Inventory[]
+}
+
+model Inventory {
+  id         Int             @id @default(autoincrement())
+  name       String
+  categoryId Int
+  category   Category        @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  quantity   Int
+  unit       InventoryUnit
+  status     InventoryStatus
+  expiryDate DateTime?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+}
+
+model Task {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  assigneeId  Int
+  assignee    User         @relation("UserToAssignee", fields: [assigneeId], references: [id])
+  assignorId  Int
+  assignor    User         @relation("UserToAssignor", fields: [assignorId], references: [id])
+  priority    TaskPriority @default(MEDIUM)
+  status      TaskStatus   @default(PENDING)
+  dueDate     DateTime
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  completedAt DateTime?
 }
