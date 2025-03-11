@@ -19,7 +19,9 @@ const paymentRoutes = require("./routes/paymentRoutes");
 const inventoryRoutes = require("./routes/inventoryRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const unitRoutes = require("./routes/unitRoutes");
-
+const taskRoutes = require("./routes/taskRoutes");
+const taskStatusRoutes = require("./routes/taskStatusRoutes");
+const taskPriorityRoutes = require("./routes/taskPriorityRoutes");
 
 // Initialize Express app
 const app = express();
@@ -51,6 +53,9 @@ app.use("/payments", paymentRoutes);
 app.use("/inventory", inventoryRoutes);
 app.use("/categories", categoryRoutes);
 app.use("/units", unitRoutes);
+app.use("/tasks", taskRoutes);
+app.use("/task-status", taskStatusRoutes);
+app.use("/task-priority", taskPriorityRoutes);
 
 // Start the server
 const PORT = process.env.PORT || 4000;
