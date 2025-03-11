@@ -16,6 +16,10 @@ const appointmentTypeRoutes = require("./routes/appointmentTypeRoutes");
 const doctorRoutes = require("./routes/doctorRoutes");
 const patientRoutes = require("./routes/patientRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
+const inventoryRoutes = require("./routes/inventoryRoutes");
+const categoryRoutes = require("./routes/categoryRoutes");
+const unitRoutes = require("./routes/unitRoutes");
+
 
 // Initialize Express app
 const app = express();
@@ -44,6 +48,9 @@ app.use("/appointmentType", appointmentTypeRoutes);
 app.use("/doctors", doctorRoutes);
 app.use("/patients", patientRoutes);
 app.use("/payments", paymentRoutes);
+app.use("/inventory", inventoryRoutes);
+app.use("/categories", categoryRoutes);
+app.use("/units", unitRoutes);
 
 // Start the server
 const PORT = process.env.PORT || 4000;

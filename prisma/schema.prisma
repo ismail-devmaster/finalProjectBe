@@ -47,6 +47,20 @@ enum AppointmentTypeEnum {
   EMERGENCY
 }
 
+enum InventoryUnit {
+  PCS
+  BOXES
+  SETS
+  PACKS
+  BOTTLES
+}
+
+enum InventoryStatus {
+  IN_STOCK
+  LOW_STOCK
+  OUT_OF_STOCK
+}
+
 model Sex {
   id     Int    @id @default(autoincrement())
   gender Gender @unique
@@ -186,4 +200,23 @@ model Payment {
   patient     Patient       @relation(fields: [patientId], references: [userId], onDelete: Cascade)
   status      PaymentStatus @relation(fields: [statusId], references: [id])
   action      Action        @relation(fields: [actionId], references: [id], onDelete: Cascade)
+}
+
+model Category {
+  id          Int         @id @default(autoincrement())
+  name        String      @unique
+  inventories Inventory[]
+}
+
+model Inventory {
+  id         Int             @id @default(autoincrement())
+  name       String
+  categoryId Int
+  category   Category        @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  quantity   Int
+  unit       InventoryUnit
+  status     InventoryStatus
+  expiryDate DateTime?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
 }

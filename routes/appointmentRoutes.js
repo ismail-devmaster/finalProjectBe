@@ -10,7 +10,7 @@ const {
 router.get(
   "/waiting",
   authenticateUser,
-  authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR"),
+  authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR", "ADMIN"),
   appointmentController.getAppointmentsWithWaitingStatus
 );
 
@@ -18,7 +18,7 @@ router.get(
 router.get(
   "/upcoming",
   authenticateUser,
-  authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR"),
+  authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR", "ADMIN"),
   appointmentController.getAppointmentsWithUpcomingStatus
 );
 
@@ -50,7 +50,7 @@ router.delete(
 router.get(
   "/",
   authenticateUser,
-  authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR"),
+  authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR", "ADMIN"),
   appointmentController.getAllAppointments
 );
 
@@ -58,7 +58,7 @@ router.get(
 router.get(
   "/:id",
   authenticateUser,
-  authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR"),
+  authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR", "ADMIN"),
   appointmentController.getAppointmentById
 );
 
@@ -66,7 +66,7 @@ router.get(
 router.get(
   "/action/:actionId",
   authenticateUser,
-  authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR"),
+  authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR", "ADMIN"),
   appointmentController.getAppointmentsByActionId
 );
 
@@ -74,7 +74,7 @@ router.get(
 router.get(
   "/doctor/:doctorId",
   authenticateUser,
-  authorizeRoles("DOCTOR", "ADMIN"),
+  authorizeRoles("DOCTOR", "ADMIN", "PATIENT"),
   appointmentController.getAppointmentsByDoctorId
 );
 

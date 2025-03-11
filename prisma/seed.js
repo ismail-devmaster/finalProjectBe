@@ -1,378 +1,566 @@
 const { PrismaClient } = require("@prisma/client");
+const bcrypt = require("bcrypt");
 const prisma = new PrismaClient();
 
 async function main() {
-  // ----------------------------------------------------
-  // Seed Lookup Tables
-  // ----------------------------------------------------
-  // Seed Sex records
-  const maleSex = await prisma.sex.create({
-    data: { gender: "MALE" },
-  });
-  const femaleSex = await prisma.sex.create({
-    data: { gender: "FEMALE" },
-  });
+  console.log("Start seeding the database...");
 
-  // Seed AppointmentStatus records
-  const waitingStatus = await prisma.appointmentStatus.create({
-    data: { status: "WAITING" },
-  });
-  const upcomingStatus = await prisma.appointmentStatus.create({
-    data: { status: "UPCOMING" },
-  });
-  const completedStatus = await prisma.appointmentStatus.create({
-    data: { status: "COMPLETED" },
-  });
+  // Clear existing data (if needed)
+  await clearDatabase();
 
-  // Seed AppointmentType records
-  const generalType = await prisma.appointmentType.create({
-    data: { type: "GENERAL" },
-  });
-  const specialistType = await prisma.appointmentType.create({
-    data: { type: "SPECIALIST" },
-  });
-  const followUpType = await prisma.appointmentType.create({
-    data: { type: "FOLLOW_UP" },
-  });
-  const emergencyType = await prisma.appointmentType.create({
-    data: { type: "EMERGENCY" },
-  });
+  // Create enums and lookup tables first
+  await seedEnums();
 
-  // Seed PaymentStatus records
-  const pendingStatus = await prisma.paymentStatus.create({
-    data: { status: "PENDING" },
-  });
-  const paidStatus = await prisma.paymentStatus.create({
-    data: { status: "PAID" },
-  });
-  const cancelledStatus = await prisma.paymentStatus.create({
-    data: { status: "CANCELLED" },
-  });
+  // Create users with various roles
+  await seedUsers();
 
-  // ----------------------------------------------------
-  // Create Users and Their Roles
-  // ----------------------------------------------------
-  // Create a doctor
-  const doctorUser = await prisma.user.create({
-    data: {
-      email: "doctor@example.com",
-      password: "doctorpassword",
-      firstName: "Alice",
-      lastName: "Smith",
-      dateOfBirth: new Date("1980-05-15"),
-      phone: "1111111111",
-      sex: { connect: { gender: "FEMALE" } },
-      role: "DOCTOR",
-      doctor: { create: {} },
-    },
-  });
+  // Create actions
+  await seedActions();
 
-  // Create two patients
-  const patientUser1 = await prisma.user.create({
-    data: {
-      email: "patient1@example.com",
-      password: "patient1password",
-      firstName: "John",
-      lastName: "Doe",
-      dateOfBirth: new Date("1990-01-01"),
-      phone: "2222222222",
-      sex: { connect: { gender: "MALE" } },
-      role: "PATIENT",
-      patient: { create: { medicalHistory: "No allergies" } },
-    },
-  });
+  // Create appointments
+  await seedAppointments();
 
-  const patientUser2 = await prisma.user.create({
-    data: {
-      email: "patient2@example.com",
-      password: "patient2password",
-      firstName: "Jane",
-      lastName: "Doe",
-      dateOfBirth: new Date("1992-02-02"),
-      phone: "3333333333",
-      sex: { connect: { gender: "FEMALE" } },
-      role: "PATIENT",
-      patient: { create: { medicalHistory: "Diabetic" } },
-    },
-  });
+  // Create queues
+  await seedQueues();
 
-  // Create a receptionist
-  const receptionistUser = await prisma.user.create({
-    data: {
-      email: "reception@example.com",
-      password: "receptionpassword",
-      firstName: "Bob",
-      lastName: "Brown",
-      dateOfBirth: new Date("1985-03-03"),
-      phone: "4444444444",
-      sex: { connect: { gender: "MALE" } },
-      role: "RECEPTIONIST",
-      receptionist: { create: {} },
-    },
-  });
+  // Create payments
+  await seedPayments();
 
-  // Create an admin
-  const adminUser = await prisma.user.create({
+  // Create inventory categories and items
+  await seedInventory();
+
+  console.log("Database seeding completed successfully.");
+}
+
+async function clearDatabase() {
+  console.log("Clearing existing data...");
+
+  // Delete in a specific order to avoid foreign key constraints
+  await prisma.queue.deleteMany({});
+  await prisma.payment.deleteMany({});
+  await prisma.appointment.deleteMany({});
+  await prisma.action.deleteMany({});
+  await prisma.inventory.deleteMany({});
+  await prisma.category.deleteMany({});
+  await prisma.admin.deleteMany({});
+  await prisma.receptionist.deleteMany({});
+  await prisma.doctor.deleteMany({});
+  await prisma.patient.deleteMany({});
+  await prisma.user.deleteMany({});
+  await prisma.paymentStatus.deleteMany({});
+  await prisma.appointmentStatus.deleteMany({});
+  await prisma.appointmentType.deleteMany({});
+  await prisma.sex.deleteMany({});
+
+  console.log("Database cleared.");
+}
+
+async function seedEnums() {
+  console.log("Seeding enum lookup tables...");
+
+  // Create sex entries
+  const sexes = [{ gender: "MALE" }, { gender: "FEMALE" }];
+
+  for (const sex of sexes) {
+    await prisma.sex.upsert({
+      where: { gender: sex.gender },
+      update: {},
+      create: sex,
+    });
+  }
+
+  // Create appointment statuses
+  const appointmentStatuses = [
+    { status: "WAITING" },
+    { status: "UPCOMING" },
+    { status: "COMPLETED" },
+  ];
+
+  for (const status of appointmentStatuses) {
+    await prisma.appointmentStatus.upsert({
+      where: { status: status.status },
+      update: {},
+      create: status,
+    });
+  }
+
+  // Create appointment types
+  const appointmentTypes = [
+    { type: "GENERAL" },
+    { type: "SPECIALIST" },
+    { type: "FOLLOW_UP" },
+    { type: "EMERGENCY" },
+  ];
+
+  for (const type of appointmentTypes) {
+    await prisma.appointmentType.upsert({
+      where: { type: type.type },
+      update: {},
+      create: type,
+    });
+  }
+
+  // Create payment statuses
+  const paymentStatuses = [
+    { status: "PENDING" },
+    { status: "PAID" },
+    { status: "CANCELLED" },
+  ];
+
+  for (const status of paymentStatuses) {
+    await prisma.paymentStatus.upsert({
+      where: { status: status.status },
+      update: {},
+      create: status,
+    });
+  }
+
+  console.log("Enum lookup tables seeded.");
+}
+
+async function seedUsers() {
+  console.log("Seeding users...");
+
+  // Hash password function
+  async function hashPassword(password) {
+    return await bcrypt.hash(password, 10);
+  }
+
+  // Create admin user
+  const adminPassword = await hashPassword("admin123");
+  const admin = await prisma.user.create({
     data: {
       email: "admin@example.com",
-      password: "adminpassword",
-      firstName: "Charlie",
-      lastName: "Green",
-      dateOfBirth: new Date("1975-04-04"),
-      phone: "5555555555",
-      sex: { connect: { gender: "MALE" } },
+      password: adminPassword,
+      firstName: "Admin",
+      lastName: "User",
+      dateOfBirth: new Date("1980-01-01"),
+      phone: "+1234567890",
+      sexId: 1, // MALE
+      isVerified: true,
       role: "ADMIN",
-      admin: { create: {} },
+      admin: {
+        create: {},
+      },
     },
   });
+  console.log(`Created admin: ${admin.email}`);
 
-  // Fetch patient records (their id equals the user id)
-  const patient1 = await prisma.patient.findUnique({
-    where: { userId: patientUser1.id },
-  });
-  const patient2 = await prisma.patient.findUnique({
-    where: { userId: patientUser2.id },
-  });
-
-  // ----------------------------------------------------
-  // Create Actions
-  // ----------------------------------------------------
-  const action1 = await prisma.action.create({
+  // Create receptionist user
+  const receptionistPassword = await hashPassword("reception123");
+  const receptionist = await prisma.user.create({
     data: {
-      appointmentType: { connect: { id: generalType.id } },
-      patient: { connect: { userId: patient1.userId } },
-      description: "General consultation for flu symptoms",
-      totalPayment: 50.0,
-      startDate: new Date(),
-      endDate: new Date(Date.now() + 30 * 60000), // +30 minutes
+      email: "receptionist@example.com",
+      password: receptionistPassword,
+      firstName: "Reception",
+      lastName: "Staff",
+      dateOfBirth: new Date("1985-05-15"),
+      phone: "+1234567891",
+      sexId: 2, // FEMALE
+      isVerified: true,
+      role: "RECEPTIONIST",
+      receptionist: {
+        create: {},
+      },
+    },
+  });
+  console.log(`Created receptionist: ${receptionist.email}`);
+
+  // Create doctor users
+  const doctorData = [
+    {
+      email: "doctor1@example.com",
+      password: await hashPassword("doctor123"),
+      firstName: "John",
+      lastName: "Smith",
+      dateOfBirth: new Date("1975-03-20"),
+      phone: "+1234567892",
+      sexId: 1, // MALE
+    },
+    {
+      email: "doctor2@example.com",
+      password: await hashPassword("doctor123"),
+      firstName: "Sarah",
+      lastName: "Johnson",
+      dateOfBirth: new Date("1980-07-12"),
+      phone: "+1234567893",
+      sexId: 2, // FEMALE
+    },
+  ];
+
+  for (const data of doctorData) {
+    const doctor = await prisma.user.create({
+      data: {
+        ...data,
+        isVerified: true,
+        role: "DOCTOR",
+        doctor: {
+          create: {},
+        },
+      },
+    });
+    console.log(`Created doctor: ${doctor.email}`);
+  }
+
+  // Create patient users
+  const patientData = [
+    {
+      email: "patient1@example.com",
+      password: await hashPassword("patient123"),
+      firstName: "Robert",
+      lastName: "Williams",
+      dateOfBirth: new Date("1990-11-05"),
+      phone: "+1234567894",
+      sexId: 1, // MALE
+      medicalHistory: "Asthma, Allergies to peanuts",
+    },
+    {
+      email: "patient2@example.com",
+      password: await hashPassword("patient123"),
+      firstName: "Jennifer",
+      lastName: "Brown",
+      dateOfBirth: new Date("1988-04-25"),
+      phone: "+1234567895",
+      sexId: 2, // FEMALE
+      medicalHistory: "Hypertension",
+    },
+    {
+      email: "patient3@example.com",
+      password: await hashPassword("patient123"),
+      firstName: "Michael",
+      lastName: "Davis",
+      dateOfBirth: new Date("1995-08-30"),
+      phone: "+1234567896",
+      sexId: 1, // MALE
+      medicalHistory: "No significant medical history",
+    },
+  ];
+
+  for (const data of patientData) {
+    const { medicalHistory, ...userData } = data;
+    const patient = await prisma.user.create({
+      data: {
+        ...userData,
+        isVerified: true,
+        role: "PATIENT",
+        patient: {
+          create: {
+            medicalHistory,
+          },
+        },
+      },
+    });
+    console.log(`Created patient: ${patient.email}`);
+  }
+
+  console.log("Users seeding completed.");
+}
+
+async function seedActions() {
+  console.log("Seeding actions...");
+
+  // Get appointment types
+  const appointmentTypes = await prisma.appointmentType.findMany();
+  const typeIdMap = appointmentTypes.reduce((map, type) => {
+    map[type.type] = type.id;
+    return map;
+  }, {});
+
+  // Get patient IDs
+  const patients = await prisma.patient.findMany({
+    select: { userId: true },
+  });
+
+  // Create actions for each patient
+  for (const patient of patients) {
+    // General checkup action
+    await prisma.action.create({
+      data: {
+        appointmentTypeId: typeIdMap["GENERAL"],
+        patientId: patient.userId,
+        description: "General health checkup",
+        totalPayment: 100.0,
+        startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
+      },
+    });
+
+    // Specialist consultation action
+    await prisma.action.create({
+      data: {
+        appointmentTypeId: typeIdMap["SPECIALIST"],
+        patientId: patient.userId,
+        description: "Specialist consultation",
+        totalPayment: 250.0,
+        startDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // 14 days ago
+      },
+    });
+
+    // Follow-up action
+    await prisma.action.create({
+      data: {
+        appointmentTypeId: typeIdMap["FOLLOW_UP"],
+        patientId: patient.userId,
+        description: "Follow-up checkup",
+        totalPayment: 80.0,
+        startDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
+      },
+    });
+  }
+
+  console.log("Actions seeding completed.");
+}
+
+async function seedAppointments() {
+  console.log("Seeding appointments...");
+
+  // Get status IDs
+  const statuses = await prisma.appointmentStatus.findMany();
+  const statusMap = statuses.reduce((map, status) => {
+    map[status.status] = status.id;
+    return map;
+  }, {});
+
+  // Get all doctors
+  const doctors = await prisma.doctor.findMany({
+    select: { userId: true },
+  });
+
+  // Get all actions
+  const actions = await prisma.action.findMany({
+    include: {
+      patient: true,
     },
   });
 
-  const action2 = await prisma.action.create({
-    data: {
-      appointmentType: { connect: { id: specialistType.id } },
-      patient: { connect: { userId: patient1.userId } },
-      description: "Specialist consultation for skin issues",
-      totalPayment: 150.0,
-      startDate: new Date(),
-      endDate: new Date(Date.now() + 60 * 60000), // +60 minutes
+  // Create appointments for each action
+  for (const action of actions) {
+    // Assign random doctor
+    const randomDoctor = doctors[Math.floor(Math.random() * doctors.length)];
+
+    // Create appointment date (based on action date)
+    const appointmentDate = new Date(action.startDate);
+    appointmentDate.setHours(9 + Math.floor(Math.random() * 8)); // Between 9 AM and 5 PM
+    appointmentDate.setMinutes(Math.floor(Math.random() * 4) * 15); // 0, 15, 30, or 45 minutes
+
+    // Determine status based on date
+    let status = "UPCOMING";
+    if (appointmentDate < new Date()) {
+      status = "COMPLETED";
+    }
+
+    await prisma.appointment.create({
+      data: {
+        patientId: action.patientId,
+        doctorId: randomDoctor.userId,
+        actionId: action.id,
+        statusId: statusMap[status],
+        date: new Date(appointmentDate.toDateString()),
+        time: appointmentDate,
+        additionalNotes: `Notes for ${action.description}`,
+      },
+    });
+  }
+
+  console.log("Appointments seeding completed.");
+}
+
+async function seedQueues() {
+  console.log("Seeding queues...");
+
+  // Get all appointments
+  const appointments = await prisma.appointment.findMany({
+    where: {
+      status: {
+        status: "UPCOMING",
+      },
+    },
+    include: {
+      patient: true,
     },
   });
 
-  const action3 = await prisma.action.create({
-    data: {
-      appointmentType: { connect: { id: emergencyType.id } },
-      patient: { connect: { userId: patient2.userId } },
-      description: "Emergency visit for severe headache",
-      totalPayment: 200.0,
-      startDate: new Date(),
-      endDate: new Date(Date.now() + 45 * 60000), // +45 minutes
+  // Create queue entries for upcoming appointments
+  for (const appointment of appointments) {
+    await prisma.queue.create({
+      data: {
+        patientId: appointment.patientId,
+        appointmentId: appointment.id,
+        estimatedWaitTime: Math.floor(Math.random() * 60) + 10, // 10-70 minutes
+        estimatedTimeToDoctor: Math.floor(Math.random() * 45) + 15, // 15-60 minutes
+        status: "WAITING",
+      },
+    });
+  }
+
+  console.log("Queues seeding completed.");
+}
+
+async function seedPayments() {
+  console.log("Seeding payments...");
+
+  // Get payment statuses
+  const statuses = await prisma.paymentStatus.findMany();
+  const statusMap = statuses.reduce((map, status) => {
+    map[status.status] = status.id;
+    return map;
+  }, {});
+
+  // Get all actions with appointments
+  const actions = await prisma.action.findMany({
+    include: {
+      appointments: {
+        include: {
+          doctor: true,
+          patient: true,
+        },
+      },
     },
   });
 
-  // ----- Additional Actions -----
-  const action4 = await prisma.action.create({
-    data: {
-      appointmentType: { connect: { id: followUpType.id } },
-      patient: { connect: { userId: patient1.userId } },
-      description: "Follow-up consultation after initial treatment",
-      totalPayment: 75.0,
-      startDate: new Date(),
-      endDate: new Date(Date.now() + 30 * 60000), // +30 minutes
-    },
-  });
+  // Create payments for each action with appointments
+  for (const action of actions) {
+    if (action.appointments.length > 0) {
+      const appointment = action.appointments[0];
+      const paymentDate = new Date(appointment.date);
 
-  const action5 = await prisma.action.create({
-    data: {
-      appointmentType: { connect: { id: generalType.id } },
-      patient: { connect: { userId: patient2.userId } },
-      description: "General check-up for annual exam",
-      totalPayment: 40.0,
-      startDate: new Date(),
-      endDate: new Date(Date.now() + 20 * 60000), // +20 minutes
-    },
-  });
+      // Create payment
+      await prisma.payment.create({
+        data: {
+          patientId: appointment.patientId,
+          doctorId: appointment.doctorId,
+          statusId: statusMap["PAID"], // Default to PAID
+          actionId: action.id,
+          amount: action.totalPayment,
+          date: paymentDate,
+          time: paymentDate,
+          description: `Payment for ${action.description}`,
+        },
+      });
+    }
+  }
 
-  // ----------------------------------------------------
-  // Create Appointments
-  // ----------------------------------------------------
-  const appointment1 = await prisma.appointment.create({
-    data: {
-      patient: { connect: { userId: patient1.userId } },
-      doctor: { connect: { userId: doctorUser.id } },
-      action: { connect: { id: action1.id } },
-      status: { connect: { id: waitingStatus.id } },
-      date: new Date(), // today
-      time: new Date(),
-      additionalNotes: "Patient arrived on time.",
-    },
-  });
+  console.log("Payments seeding completed.");
+}
 
-  const appointment2 = await prisma.appointment.create({
-    data: {
-      patient: { connect: { userId: patient1.userId } },
-      doctor: { connect: { userId: doctorUser.id } },
-      action: { connect: { id: action2.id } },
-      status: { connect: { id: upcomingStatus.id } },
-      date: new Date(new Date().setDate(new Date().getDate() + 1)), // tomorrow
-      time: new Date(new Date().setHours(10, 0, 0, 0)),
-      additionalNotes: "Follow-up required.",
-    },
-  });
+async function seedInventory() {
+  console.log("Seeding inventory...");
 
-  const appointment3 = await prisma.appointment.create({
-    data: {
-      patient: { connect: { userId: patient2.userId } },
-      doctor: { connect: { userId: doctorUser.id } },
-      action: { connect: { id: action3.id } },
-      status: { connect: { id: completedStatus.id } },
-      date: new Date(new Date().setDate(new Date().getDate() - 1)), // yesterday
-      time: new Date(new Date().setHours(9, 30, 0, 0)),
-      additionalNotes: "Treatment successful.",
-    },
-  });
+  // Create categories
+  const categories = [
+    { name: "Medications" },
+    { name: "Medical Supplies" },
+    { name: "Office Supplies" },
+    { name: "Equipment" },
+  ];
 
-  // ----- Additional Appointments -----
-  const appointment4 = await prisma.appointment.create({
-    data: {
-      patient: { connect: { userId: patient1.userId } },
-      doctor: { connect: { userId: doctorUser.id } },
-      action: { connect: { id: action4.id } },
-      status: { connect: { id: upcomingStatus.id } },
-      date: new Date(new Date().setDate(new Date().getDate() + 2)), // day after tomorrow
-      time: new Date(new Date().setHours(11, 0, 0, 0)),
-      additionalNotes: "Follow-up appointment scheduled.",
-    },
-  });
+  const categoryMap = {};
 
-  const appointment5 = await prisma.appointment.create({
-    data: {
-      patient: { connect: { userId: patient2.userId } },
-      doctor: { connect: { userId: doctorUser.id } },
-      action: { connect: { id: action5.id } },
-      status: { connect: { id: waitingStatus.id } },
-      date: new Date(new Date().setDate(new Date().getDate() + 3)), // in three days
-      time: new Date(new Date().setHours(14, 30, 0, 0)),
-      additionalNotes: "General check-up appointment.",
-    },
-  });
+  for (const category of categories) {
+    const createdCategory = await prisma.category.create({
+      data: category,
+    });
+    categoryMap[category.name] = createdCategory.id;
+  }
 
-  // ----------------------------------------------------
-  // Create Payments
-  // ----------------------------------------------------
-  const payment1 = await prisma.payment.create({
-    data: {
-      patient: { connect: { userId: patient1.userId } },
-      doctor: { connect: { userId: doctorUser.id } },
-      status: { connect: { id: paidStatus.id } },
-      action: { connect: { id: action1.id } },
-      amount: 50.0,
-      date: new Date(),
-      time: new Date(),
-      description: "Payment completed via credit card.",
+  // Create inventory items
+  const inventoryItems = [
+    {
+      name: "Paracetamol 500mg",
+      categoryId: categoryMap["Medications"],
+      quantity: 500,
+      unit: "BOXES",
+      status: "IN_STOCK",
+      expiryDate: new Date("2025-12-31"),
     },
-  });
-
-  const payment2 = await prisma.payment.create({
-    data: {
-      patient: { connect: { userId: patient1.userId } },
-      doctor: { connect: { userId: doctorUser.id } },
-      status: { connect: { id: pendingStatus.id } },
-      action: { connect: { id: action2.id } },
-      amount: 150.0,
-      date: new Date(new Date().setDate(new Date().getDate() + 1)),
-      time: new Date(new Date().setHours(10, 30, 0, 0)),
-      description: "Payment pending, to be processed later.",
+    {
+      name: "Ibuprofen 200mg",
+      categoryId: categoryMap["Medications"],
+      quantity: 350,
+      unit: "BOXES",
+      status: "IN_STOCK",
+      expiryDate: new Date("2025-10-15"),
     },
-  });
-
-  const payment3 = await prisma.payment.create({
-    data: {
-      patient: { connect: { userId: patient2.userId } },
-      doctor: { connect: { userId: doctorUser.id } },
-      status: { connect: { id: cancelledStatus.id } },
-      action: { connect: { id: action3.id } },
-      amount: 200.0,
-      date: new Date(new Date().setDate(new Date().getDate() - 1)),
-      time: new Date(new Date().setHours(10, 15, 0, 0)),
-      description: "Payment cancelled due to insurance issues.",
+    {
+      name: "Antibiotics",
+      categoryId: categoryMap["Medications"],
+      quantity: 75,
+      unit: "BOXES",
+      status: "LOW_STOCK",
+      expiryDate: new Date("2025-06-30"),
     },
-  });
-
-  // ----- Additional Payments -----
-  const payment4 = await prisma.payment.create({
-    data: {
-      patient: { connect: { userId: patient1.userId } },
-      doctor: { connect: { userId: doctorUser.id } },
-      status: { connect: { id: paidStatus.id } },
-      action: { connect: { id: action4.id } },
-      amount: 75.0,
-      date: new Date(new Date().setDate(new Date().getDate() + 2)),
-      time: new Date(new Date().setHours(11, 30, 0, 0)),
-      description: "Payment for follow-up consultation completed.",
+    {
+      name: "Disposable Gloves",
+      categoryId: categoryMap["Medical Supplies"],
+      quantity: 1000,
+      unit: "BOXES",
+      status: "IN_STOCK",
+      expiryDate: null,
     },
-  });
-
-  const payment5 = await prisma.payment.create({
-    data: {
-      patient: { connect: { userId: patient2.userId } },
-      doctor: { connect: { userId: doctorUser.id } },
-      status: { connect: { id: pendingStatus.id } },
-      action: { connect: { id: action5.id } },
-      amount: 40.0,
-      date: new Date(new Date().setDate(new Date().getDate() + 3)),
-      time: new Date(new Date().setHours(15, 0, 0, 0)),
-      description: "Payment pending for general check-up.",
+    {
+      name: "Face Masks",
+      categoryId: categoryMap["Medical Supplies"],
+      quantity: 1200,
+      unit: "BOXES",
+      status: "IN_STOCK",
+      expiryDate: null,
     },
-  });
-
-  // ----------------------------------------------------
-  // Create Queue Entries (for completeness)
-  // ----------------------------------------------------
-  const queue1 = await prisma.queue.create({
-    data: {
-      patient: { connect: { userId: patient1.userId } },
-      appointment: { connect: { id: appointment1.id } },
-      estimatedWaitTime: 15,
-      estimatedTimeToDoctor: 5,
-      status: "WAITING",
+    {
+      name: "Syringes",
+      categoryId: categoryMap["Medical Supplies"],
+      quantity: 20,
+      unit: "PACKS",
+      status: "LOW_STOCK",
+      expiryDate: null,
     },
-  });
-
-  const queue2 = await prisma.queue.create({
-    data: {
-      patient: { connect: { userId: patient2.userId } },
-      appointment: { connect: { id: appointment3.id } },
-      estimatedWaitTime: 0,
-      estimatedTimeToDoctor: 0,
-      status: "COMPLETED",
+    {
+      name: "Paper",
+      categoryId: categoryMap["Office Supplies"],
+      quantity: 50,
+      unit: "PACKS",
+      status: "IN_STOCK",
+      expiryDate: null,
     },
-  });
-
-  // Additional queue entries for new appointments
-  const queue3 = await prisma.queue.create({
-    data: {
-      patient: { connect: { userId: patient1.userId } },
-      appointment: { connect: { id: appointment4.id } },
-      estimatedWaitTime: 10,
-      estimatedTimeToDoctor: 3,
-      status: "WAITING",
+    {
+      name: "Pens",
+      categoryId: categoryMap["Office Supplies"],
+      quantity: 5,
+      unit: "BOXES",
+      status: "LOW_STOCK",
+      expiryDate: null,
     },
-  });
-
-  const queue4 = await prisma.queue.create({
-    data: {
-      patient: { connect: { userId: patient2.userId } },
-      appointment: { connect: { id: appointment5.id } },
-      estimatedWaitTime: 20,
-      estimatedTimeToDoctor: 8,
-      status: "WAITING",
+    {
+      name: "Blood Pressure Monitor",
+      categoryId: categoryMap["Equipment"],
+      quantity: 10,
+      unit: "PCS",
+      status: "IN_STOCK",
+      expiryDate: null,
     },
-  });
+    {
+      name: "Stethoscope",
+      categoryId: categoryMap["Equipment"],
+      quantity: 5,
+      unit: "PCS",
+      status: "IN_STOCK",
+      expiryDate: null,
+    },
+    {
+      name: "Thermometer",
+      categoryId: categoryMap["Equipment"],
+      quantity: 2,
+      unit: "SETS",
+      status: "LOW_STOCK",
+      expiryDate: null,
+    },
+  ];
 
-  console.log(
-    "Database seeded successfully with additional actions, appointments, and payments!"
-  );
+  for (const item of inventoryItems) {
+    await prisma.inventory.create({
+      data: item,
+    });
+  }
+
+  console.log("Inventory seeding completed.");
 }
 
 main()
