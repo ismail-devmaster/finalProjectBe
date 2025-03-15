@@ -5,13 +5,21 @@ const getAllPatients = async () => {
   return await patientRepository.getAllPatients();
 };
 
-const getPatientById = async (id) => {
-  return await patientRepository.getPatientById(id);
+const getPatientDataById = async (userId) => {
+  return await patientRepository.getPatientDataById(userId);
+};
+
+const getPatientData = async (userId) => {
+  return await patientRepository.getPatientData(userId);
 };
 
 const getPatientId = async (userId) => {
   return await patientRepository.getPatientId(userId);
 };
 
-
-module.exports = { getAllPatients, getPatientById, getPatientId };
+module.exports = {
+  getAllPatients,
+  getPatientDataById,
+  getPatientId,
+  getPatientData,
+};
