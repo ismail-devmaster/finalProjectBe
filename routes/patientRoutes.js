@@ -11,7 +11,13 @@ router.get(
   "/id",
   authenticateUser,
   authorizeRoles("PATIENT"),
-  patientController.getPatientId
+  patientController.getPatientId,
+);
+router.get(
+  "/data",
+  authenticateUser,
+  authorizeRoles("PATIENT"),
+  patientController.getPatientData,
 );
 
 // GET /patients - allowed for ADMIN, DOCTOR, and RECEPTIONIST roles
@@ -19,7 +25,7 @@ router.get(
   "/",
   authenticateUser,
   authorizeRoles("ADMIN", "DOCTOR", "RECEPTIONIST"),
-  patientController.getAllPatients
+  patientController.getAllPatients,
 );
 
 // GET /patients/:id - allowed for ADMIN, DOCTOR, and RECEPTIONIST roles
@@ -27,7 +33,7 @@ router.get(
   "/:id",
   authenticateUser,
   authorizeRoles("ADMIN", "DOCTOR", "RECEPTIONIST"),
-  patientController.getPatientById
+  patientController.getPatientDataById,
 );
 
 module.exports = router;

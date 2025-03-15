@@ -10,9 +10,9 @@ exports.getAllPatients = async (req, res) => {
   }
 };
 
-exports.getPatientById = async (req, res) => {
+exports.getPatientDataById = async (req, res) => {
   try {
-    const patient = await patientService.getPatientById(req.params.id);
+    const patient = await patientService.getPatientDataById(req.params.id);
     if (!patient) {
       return res.status(404).json({ error: "Patient not found" });
     }
@@ -33,5 +33,18 @@ exports.getPatientId = async (req, res) => {
   } catch (error) {
     console.error("Error fetching patient id:", error);
     res.status(500).json({ error: "Failed to retrieve patient id" });
+  }
+};
+
+exports.getPatientData = async (req, res) => {
+  try {
+    const patient = await patientService.getPatientData(req.user.id);
+    if (!patient) {
+      return res.status(404).json({ error: "Patient not found" });
+    }
+    res.json({ patientData: patient });
+  } catch (error) {
+    console.error("Error fetching patient:", error);
+    res.status(500).json({ error: "Failed to fetch patient" });
   }
 };
