@@ -38,14 +38,13 @@ exports.getPatientId = async (req, res) => {
 
 exports.getPatientData = async (req, res) => {
   try {
-    // req.user is assumed to be set by authenticatePatient middleware
-    const result = await patientService.getPatientId(req.user.id);
-    if (!result) {
+    const patient = await patientService.getPatientData(req.user.id);
+    if (!patient) {
       return res.status(404).json({ error: "Patient not found" });
     }
-    res.json({ patientId: result.userId });
+    res.json({ patientData: patient });
   } catch (error) {
-    console.error("Error fetching patient id:", error);
-    res.status(500).json({ error: "Failed to retrieve patient id" });
+    console.error("Error fetching patient:", error);
+    res.status(500).json({ error: "Failed to fetch patient" });
   }
 };
