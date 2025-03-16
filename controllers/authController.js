@@ -251,3 +251,13 @@ exports.completeProfile = async (req, res) => {
     res.status(500).json({ error: "Failed to update profile" });
   }
 };
+
+exports.getUserId = async (req, res) => {
+  try {
+    const user = await authService.getUserId(req.user.id);
+    res.json({ user });
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    res.status(500).json({ error: "Failed to retrieve user" });
+  }
+};

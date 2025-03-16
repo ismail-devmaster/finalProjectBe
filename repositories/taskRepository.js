@@ -21,6 +21,7 @@ const getAllTasks = async () => {
     include: {
       assignee: {
         select: {
+          id: true,
           firstName: true,
           lastName: true,
           email: true,
@@ -28,6 +29,7 @@ const getAllTasks = async () => {
       },
       assignor: {
         select: {
+          id: true,
           firstName: true,
           lastName: true,
           email: true,
@@ -43,6 +45,7 @@ const getTaskById = async (id) => {
     include: {
       assignee: {
         select: {
+          id: true,
           firstName: true,
           lastName: true,
           email: true,
@@ -50,6 +53,7 @@ const getTaskById = async (id) => {
       },
       assignor: {
         select: {
+          id: true,
           firstName: true,
           lastName: true,
           email: true,

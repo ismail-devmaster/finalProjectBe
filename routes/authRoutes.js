@@ -23,6 +23,8 @@ router.post("/refresh-token", authController.refreshToken);
 router.post("/logout", authenticateUser, authController.logout);
 router.post("/forgot-password", authController.forgotPassword);
 router.post("/reset-password/:token", authController.resetPassword);
+router.get("/userId", authenticateUser, authController.getUserId);
+
 
 // Complete profile for new Google users (if needed)
 router.post("/update-profile", authController.completeProfile);

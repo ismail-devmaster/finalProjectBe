@@ -3,7 +3,6 @@ const prisma = require("../config/database");
 const findUserByEmail = async (email) =>
   await prisma.user.findUnique({ where: { email } });
 
-
 const createUser = async (userData) =>
   await prisma.user.create({ data: userData });
 
@@ -25,7 +24,11 @@ const updateUserVerification = async (userId) =>
 const updateUserPassword = async (email, hashedPassword) =>
   await prisma.user.update({
     where: { email },
-    data: { password: hashedPassword, resetToken: null, resetTokenExpiry: null },
+    data: {
+      password: hashedPassword,
+      resetToken: null,
+      resetTokenExpiry: null,
+    },
   });
 
 const findUserByVerificationToken = async (token) =>
@@ -45,6 +48,13 @@ const updateResetToken = async (email, resetToken, resetTokenExpiry) =>
     data: { resetToken, resetTokenExpiry },
   });
 
+const getUserById = async (id) => {
+  return await prisma.user.findUnique({
+    where: { id: Number(id) },
+    select: { id: true },
+  });
+};
+
 module.exports = {
   findUserByEmail,
   createUser,
@@ -55,4 +65,5 @@ module.exports = {
   findUserByVerificationToken,
   findUserByResetToken,
   updateResetToken,
+  getUserById,
 };

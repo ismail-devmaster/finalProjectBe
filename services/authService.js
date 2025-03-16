@@ -3,7 +3,10 @@ const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 dotenv.config();
 
-const { generateTokens, generateVerificationToken } = require("../utils/tokenUtil");
+const {
+  generateTokens,
+  generateVerificationToken,
+} = require("../utils/tokenUtil");
 const authRepository = require("../repositories/authRepository");
 
 const signup = async ({
@@ -56,7 +59,10 @@ const login = async ({ email, password }) => {
 
 const refreshTokenService = async (oldRefreshToken) => {
   try {
-    const decoded = jwt.verify(oldRefreshToken, process.env.REFRESH_TOKEN_SECRET);
+    const decoded = jwt.verify(
+      oldRefreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
     // Depending on your implementation, retrieve the user and verify tokens.
     const user = await authRepository.findUserByEmail(decoded.email);
     if (!user || user.refreshToken !== oldRefreshToken)
@@ -94,6 +100,10 @@ const resetPassword = async (token, newPassword) => {
   return user;
 };
 
+const getUserId = async (userId) => {
+  return await authRepository.getUserById(userId);
+};
+
 module.exports = {
   signup,
   login,
@@ -101,4 +111,5 @@ module.exports = {
   forgotPassword,
   verifyEmail,
   resetPassword,
+  getUserId,
 };
