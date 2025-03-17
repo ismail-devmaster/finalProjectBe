@@ -1,0 +1,33 @@
+{
+  "a-file-icon-vscode.activeIconPacks": [
+    "rails",
+    "angular",
+    "react",
+    "phalcon"
+  ],
+  "a-file-icon-vscode.arrowTheme": "material",
+  "a-file-icon-vscode.folderColor": "#90a4ae",
+  "a-file-icon-vscode.folderTheme": "specific",
+  "a-file-icon-vscode.opacity": 1,
+  "a-file-icon-vscode.saturation": 1,
+  "workbench.colorCustomizations": {
+    "activityBar.activeBackground": "#ff3333",
+    "activityBar.background": "#ff3333",
+    "activityBar.foreground": "#e7e7e7",
+    "activityBar.inactiveForeground": "#e7e7e799",
+    "activityBarBadge.background": "#00df00",
+    "activityBarBadge.foreground": "#15202b",
+    "commandCenter.border": "#e7e7e799",
+    "sash.hoverBorder": "#ff3333",
+    "statusBar.background": "#ff0000",
+    "statusBar.foreground": "#e7e7e7",
+    "statusBarItem.hoverBackground": "#ff3333",
+    "statusBarItem.remoteBackground": "#ff0000",
+    "statusBarItem.remoteForeground": "#e7e7e7",
+    "titleBar.activeBackground": "#ff0000",
+    "titleBar.activeForeground": "#e7e7e7",
+    "titleBar.inactiveBackground": "#ff000099",
+    "titleBar.inactiveForeground": "#e7e7e799"
+  },
+  "peacock.color": "red"
+}

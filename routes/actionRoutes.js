@@ -18,7 +18,7 @@ router.post(
 router.get(
   "/",
   authenticateUser,
-  authorizeRoles("PATIENT", "DOCTOR", "RECEPTIONIST"),
+  authorizeRoles("PATIENT", "DOCTOR", "RECEPTIONIST", "ADMIN"),
   actionController.getAllActions
 );
 
@@ -26,7 +26,7 @@ router.get(
 router.get(
   "/:id",
   authenticateUser,
-  authorizeRoles("PATIENT", "DOCTOR", "RECEPTIONIST"),
+  authorizeRoles("PATIENT", "DOCTOR", "RECEPTIONIST", "ADMIN"),
   actionController.getActionById
 );
 
@@ -34,7 +34,7 @@ router.get(
 router.get(
   "/patient/:patientId",
   authenticateUser,
-  authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR"),
+  authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR", "ADMIN"),
   actionController.getActionsByPatientId
 );
 
@@ -42,7 +42,7 @@ router.get(
 router.put(
   "/:id",
   authenticateUser,
-  authorizeRoles("PATIENT", "DOCTOR"),
+  authorizeRoles("PATIENT", "DOCTOR", "ADMIN"),
   actionController.updateAction
 );
 
@@ -50,7 +50,7 @@ router.put(
 router.delete(
   "/:id",
   authenticateUser,
-  authorizeRoles("PATIENT", "DOCTOR"),
+  authorizeRoles("PATIENT", "DOCTOR", "ADMIN"),
   actionController.deleteAction
 );
 
