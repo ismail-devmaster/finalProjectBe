@@ -29,7 +29,17 @@ const getAllPayments = async () => {
           },
         },
       },
-      patient: true,
+      patient: {
+        select: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      },
       status: true,
       action: true,
     },
