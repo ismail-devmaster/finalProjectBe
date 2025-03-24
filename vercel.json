@@ -11,5 +11,8 @@
       "src": "/(.*)",
       "dest": "server.js"
     }
-  ]
+  ],
+  "env": {
+    "DATABASE_URL": "postgresql://ramdani:xcROFNEfGayCPBMP6HCTfdGPAt1JTOvu@dpg-cvgceg0gph6c73bj16v0-a.oregon-postgres.render.com/ramdani"
+  }
 }

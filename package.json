@@ -6,7 +6,8 @@
     "dev": "nodemon server.js",
     "start": "node server.js",
     "seed": "node prisma/seed.js",
-    "build": "echo hello"
+    "build": "echo hello",
+    "postinstall": "prisma generate"
   },
   "keywords": [],
   "author": "",
