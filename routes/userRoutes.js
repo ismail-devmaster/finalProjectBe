@@ -7,7 +7,7 @@ const {
 } = require("../middlewares/authMiddleware");
 
 router.get(
-  "/",
+  "/staff",
   authenticateUser,
   authorizeRoles("DOCTOR", "RECEPTIONIST", "ADMIN"),
   userController.getUsersController
