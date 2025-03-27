@@ -9,6 +9,7 @@ dotenv.config();
 
 // Import routes
 const authRoutes = require("./routes/authRoutes");
+const userRoutes = require("./routes/userRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const actionRoutes = require("./routes/actionRoutes");
 const appointmentRoutes = require("./routes/appointmentRoutes");
@@ -43,6 +44,7 @@ app.use(passport.initialize());
 
 // Mount routes
 app.use("/auth", authRoutes);
+app.use("/users", userRoutes);
 app.use("/admin", adminRoutes);
 app.use("/actions", actionRoutes);
 app.use("/appointments", appointmentRoutes);
