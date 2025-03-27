@@ -9,6 +9,13 @@ const getAllTasks = async () => {
   return await taskRepository.getAllTasks();
 };
 
+const getMyTasks = async (userId) => {
+  return await taskRepository.getMyTasks(userId);
+};
+
+const getMyCompletedTasks = async (userId) => {
+  return await taskRepository.getMyCompletedTasks(userId);
+};
 const getTaskById = async (id) => {
   return await taskRepository.getTaskById(id);
 };
@@ -25,6 +32,8 @@ module.exports = {
   createTask,
   getAllTasks,
   getTaskById,
+  getMyTasks,
+  getMyCompletedTasks,
   updateTask,
   deleteTask,
 };

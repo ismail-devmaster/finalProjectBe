@@ -63,6 +63,34 @@ const getTaskById = async (id) => {
   });
 };
 
+const getMyTasks = async (userId) => {
+  return await prisma.task.findMany({
+    where: {
+      assigneeId: Number(userId),
+      status: { not: "COMPLETED" }, // Exclude completed tasks
+    },
+    include: {
+      assignee: true,
+      assignor: true,
+    },
+    orderBy: { dueDate: "asc" },
+  });
+};
+
+const getMyCompletedTasks = async (userId) => {
+  return await prisma.task.findMany({
+    where: {
+      assigneeId: Number(userId),
+      status: "COMPLETED",
+    },
+    include: {
+      assignee: true,
+      assignor: true,
+    },
+    orderBy: { completedAt: "desc" },
+  });
+};
+
 const updateTask = async (id, data) => {
   return await prisma.task.update({
     where: { id },
@@ -89,6 +117,8 @@ module.exports = {
   createTask,
   getAllTasks,
   getTaskById,
+  getMyTasks,
+  getMyCompletedTasks,
   updateTask,
   deleteTask,
 };

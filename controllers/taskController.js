@@ -32,6 +32,27 @@ exports.getTaskById = async (req, res) => {
   }
 };
 
+exports.getMyTasks = async (req, res) => {
+  try {
+    // req.user.id is set by the authentication middleware
+    const tasks = await taskService.getMyTasks(req.user.id);
+    res.json({ tasks });
+  } catch (error) {
+    console.error("Error fetching my tasks:", error);
+    res.status(500).json({ error: "Failed to fetch your tasks" });
+  }
+};
+
+exports.getMyCompletedTasks = async (req, res) => {
+  try {
+    const tasks = await taskService.getMyCompletedTasks(req.user.id);
+    res.json({ tasks });
+  } catch (error) {
+    console.error("Error fetching my completed tasks:", error);
+    res.status(500).json({ error: "Failed to fetch your completed tasks" });
+  }
+};
+
 exports.updateTask = async (req, res) => {
   try {
     const { id } = req.params;
