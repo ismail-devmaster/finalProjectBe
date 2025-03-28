@@ -116,8 +116,8 @@ model User {
   doctor            Doctor?         @relation("UserToDoctor")
   receptionist      Receptionist?   @relation("UserToReceptionist")
   admin             Admin?          @relation("UserToAdmin")
-  assigneeTasks  Task[]   @relation("UserToAssignee")
-  assignorTasks  Task[]   @relation("UserToAssignor")
+  assignedTasks     Task[]          @relation("TaskAssignees")  // Many-to-many (new)
+  assignorTasks     Task[]          @relation("UserToAssignor") // One-to-many (existing)
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
@@ -237,17 +237,16 @@ model Inventory {
 }
 
 model Task {
-  id          String       @id @default(cuid())
-  title       String
-  description String?
-  assigneeId  Int
-  assignee    User         @relation("UserToAssignee", fields: [assigneeId], references: [id])
-  assignorId  Int
-  assignor    User         @relation("UserToAssignor", fields: [assignorId], references: [id])
-  priority    TaskPriority @default(MEDIUM)
-  status      TaskStatus   @default(PENDING)
-  dueDate     DateTime
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  completedAt DateTime?
+  id           String       @id @default(cuid())
+  title        String
+  description  String?
+  assignorId   Int
+  assignor     User         @relation("UserToAssignor", fields: [assignorId], references: [id])
+  assignees    User[]       @relation("TaskAssignees")  // Many-to-many
+  priority     TaskPriority @default(MEDIUM)
+  status       TaskStatus   @default(PENDING)
+  dueDate      DateTime
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  completedAt  DateTime?
 }

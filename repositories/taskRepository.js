@@ -5,12 +5,14 @@ const createTask = async (data) => {
     data: {
       title: data.title,
       description: data.description,
-      assigneeId: Number(data.assigneeId),
-      assignorId: Number(data.assignorId), // new: assignor relation
-      priority: data.priority, // e.g., "HIGH", "MEDIUM", "LOW"
-      status: data.status, // e.g., "PENDING", "IN_PROGRESS", "COMPLETED"
+      assignorId: Number(data.assignorId),
+      priority: data.priority,
+      status: data.status,
       dueDate: new Date(data.dueDate),
       completedAt: data.completedAt ? new Date(data.completedAt) : null,
+      assignees: {
+        connect: data.assigneeIds.map((id) => ({ id: Number(id) })),
+      },
     },
   });
 };
@@ -19,13 +21,8 @@ const getAllTasks = async () => {
   return await prisma.task.findMany({
     orderBy: { createdAt: "desc" },
     include: {
-      assignee: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          email: true,
-        },
+      assignees: {
+        select: { id: true, firstName: true, lastName: true, email: true },
       },
       assignor: {
         select: {
@@ -43,13 +40,8 @@ const getTaskById = async (id) => {
   return await prisma.task.findUnique({
     where: { id },
     include: {
-      assignee: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          email: true,
-        },
+      assignees: {
+        select: { id: true, firstName: true, lastName: true, email: true },
       },
       assignor: {
         select: {
@@ -66,7 +58,7 @@ const getTaskById = async (id) => {
 const getMyTasks = async (userId) => {
   return await prisma.task.findMany({
     where: {
-      assigneeId: Number(userId),
+      assignees: { some: { id: Number(userId) } },
       status: { not: "COMPLETED" }, // Exclude completed tasks
     },
     include: {
@@ -80,7 +72,7 @@ const getMyTasks = async (userId) => {
 const getMyCompletedTasks = async (userId) => {
   return await prisma.task.findMany({
     where: {
-      assigneeId: Number(userId),
+      assignees: { some: { id: Number(userId) } },
       status: "COMPLETED",
     },
     include: {
@@ -97,12 +89,17 @@ const updateTask = async (id, data) => {
     data: {
       title: data.title,
       description: data.description,
-      ...(data.assigneeId && { assigneeId: Number(data.assigneeId) }),
-      ...(data.assignorId && { assignorId: Number(data.assignorId) }), // update assignor if provided
+      ...(data.assignorId && { assignorId: Number(data.assignorId) }),
       priority: data.priority,
       status: data.status,
       dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
       completedAt: data.completedAt ? new Date(data.completedAt) : undefined,
+      // Handle multiple assignees
+      ...(data.assigneeIds && {
+        assignees: {
+          set: data.assigneeIds.map((id) => ({ id: Number(id) })),
+        },
+      }),
     },
   });
 };
