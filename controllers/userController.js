@@ -9,4 +9,13 @@ const getUsersController = async (req, res) => {
   }
 };
 
-module.exports = { getUsersController };
+const getReceptionistsController = async (req, res) => {
+  try {
+    const receptionists = await userService.getReceptionists();
+    res.status(200).json(receptionists);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { getUsersController, getReceptionistsController };

@@ -7,4 +7,10 @@ const getStaff = async () => {
   });
 };
 
-module.exports = { getStaff };
+const getReceptionist = async () => {
+  return await prisma.user.findMany({
+    where: { role: "RECEPTIONIST" },
+  });
+};
+
+module.exports = { getStaff, getReceptionist };

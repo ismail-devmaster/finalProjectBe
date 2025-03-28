@@ -13,4 +13,11 @@ router.get(
   userController.getUsersController
 );
 
+router.get(
+  "/receptionists",
+  authenticateUser,
+  authorizeRoles("DOCTOR", "RECEPTIONIST", "ADMIN"),
+  userController.getReceptionistsController
+);
+
 module.exports = router;

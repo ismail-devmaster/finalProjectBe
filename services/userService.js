@@ -4,4 +4,8 @@ const getUsers = async () => {
   return await userRepository.getStaff();
 };
 
-module.exports = { getUsers };
+const getReceptionists = async () => {
+  return await userRepository.getReceptionist();
+};
+
+module.exports = { getUsers, getReceptionists };
