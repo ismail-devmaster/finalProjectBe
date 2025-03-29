@@ -5,8 +5,8 @@ const createTask = async (data) => {
   return await taskRepository.createTask(data);
 };
 
-const getAllTasks = async () => {
-  return await taskRepository.getAllTasks();
+const getAllTasks = async (userId) => {
+  return await taskRepository.getAllTasks(userId);
 };
 
 const getMyTasks = async (userId) => {

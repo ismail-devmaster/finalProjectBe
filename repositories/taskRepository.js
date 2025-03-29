@@ -17,8 +17,11 @@ const createTask = async (data) => {
   });
 };
 
-const getAllTasks = async () => {
+const getAllTasks = async (userId) => {
   return await prisma.task.findMany({
+    where: {
+      assignees: { none: { id: Number(userId) } }
+    },
     orderBy: { createdAt: "desc" },
     include: {
       assignees: {

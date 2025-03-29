@@ -12,7 +12,7 @@ exports.createTask = async (req, res) => {
 
 exports.getAllTasks = async (req, res) => {
   try {
-    const tasks = await taskService.getAllTasks();
+    const tasks = await taskService.getAllTasks(req.user.id);
     res.json({ tasks });
   } catch (error) {
     console.error("Error fetching tasks:", error);
