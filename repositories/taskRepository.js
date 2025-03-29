@@ -62,7 +62,9 @@ const getMyTasks = async (userId) => {
       status: { not: "COMPLETED" }, // Exclude completed tasks
     },
     include: {
-      assignee: true,
+      assignees: {
+        select: { id: true, firstName: true, lastName: true, email: true },
+      },
       assignor: true,
     },
     orderBy: { dueDate: "asc" },
@@ -76,7 +78,9 @@ const getMyCompletedTasks = async (userId) => {
       status: "COMPLETED",
     },
     include: {
-      assignee: true,
+      assignees: {
+        select: { id: true, firstName: true, lastName: true, email: true },
+      },
       assignor: true,
     },
     orderBy: { completedAt: "desc" },
