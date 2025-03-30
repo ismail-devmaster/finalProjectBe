@@ -64,3 +64,33 @@ exports.deleteInventory = async (req, res) => {
     res.status(500).json({ error: "Failed to delete inventory item" });
   }
 };
+
+exports.getLowInventories = async (req, res) => {
+  try {
+    const inventories = await inventoryService.getLowInventories();
+    res.json({ inventories });
+  } catch (error) {
+    console.error("Error fetching low inventories:", error);
+    res.status(500).json({ error: "Failed to fetch low inventories" });
+  }
+};
+
+exports.getInStockInventories = async (req, res) => {
+  try {
+    const inventories = await inventoryService.getInStockInventories();
+    res.json({ inventories });
+  } catch (error) {
+    console.error("Error fetching in-stock inventories:", error);
+    res.status(500).json({ error: "Failed to fetch in-stock inventories" });
+  }
+};
+
+exports.getOutOfStockInventories = async (req, res) => {
+  try {
+    const inventories = await inventoryService.getOutOfStockInventories();
+    res.json({ inventories });
+  } catch (error) {
+    console.error("Error fetching out-of-stock inventories:", error);
+    res.status(500).json({ error: "Failed to fetch out-of-stock inventories" });
+  }
+};

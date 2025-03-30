@@ -38,4 +38,25 @@ router.delete(
   inventoryController.deleteInventory
 );
 
+router.get(
+  "/low-stock",
+  authenticateUser,
+  authorizeRoles("ADMIN", "DOCTOR"),
+  inventoryController.getLowInventories
+);
+
+router.get(
+  "/in-stock",
+  authenticateUser,
+  authorizeRoles("ADMIN", "DOCTOR"),
+  inventoryController.getInStockInventories
+);
+
+router.get(
+  "/out-of-stock",
+  authenticateUser,
+  authorizeRoles("ADMIN", "DOCTOR"),
+  inventoryController.getOutOfStockInventories
+);
+
 module.exports = router;

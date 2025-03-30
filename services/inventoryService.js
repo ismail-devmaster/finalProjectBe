@@ -20,10 +20,25 @@ const deleteInventory = async (id) => {
   return await inventoryRepository.deleteInventory(id);
 };
 
+const getLowInventories = async () => {
+  return await inventoryRepository.getLowInventories();
+};
+
+const getInStockInventories = async () => {
+  return await inventoryRepository.getInStockInventories();
+};
+
+const getOutOfStockInventories = async () => {
+  return await inventoryRepository.getOutOfStockInventories();
+};
+
 module.exports = {
   createInventory,
   getAllInventories,
   getInventoryById,
   updateInventory,
   deleteInventory,
+  getLowInventories,
+  getInStockInventories,
+  getOutOfStockInventories,
 };

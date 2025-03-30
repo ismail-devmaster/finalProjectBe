@@ -47,10 +47,37 @@ const deleteInventory = async (id) => {
   });
 };
 
+const getLowInventories = async () => {
+  return await prisma.inventory.findMany({
+    where: { status: "LOW_STOCK" },
+    include: { category: true },
+    orderBy: { createdAt: "desc" },
+  });
+};
+
+const getInStockInventories = async () => {
+  return await prisma.inventory.findMany({
+    where: { status: "IN_STOCK" },
+    include: { category: true },
+    orderBy: { createdAt: "desc" },
+  });
+};
+
+const getOutOfStockInventories = async () => {
+  return await prisma.inventory.findMany({
+    where: { status: "OUT_OF_STOCK" },
+    include: { category: true },
+    orderBy: { createdAt: "desc" },
+  });
+};
+
 module.exports = {
   createInventory,
   getAllInventories,
   getInventoryById,
   updateInventory,
   deleteInventory,
+  getLowInventories,
+  getInStockInventories,
+  getOutOfStockInventories,
 };
