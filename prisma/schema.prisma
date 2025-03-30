@@ -72,6 +72,14 @@ enum TaskPriority {
   LOW
 }
 
+enum CategoryEnum {
+  MEDICATIONS
+  MEDICAL_SUPPLIES
+  EQUIPMENT
+  LABORATORY
+  OFFICE_SUPPLIES
+}
+
 model Sex {
   id     Int    @id @default(autoincrement())
   gender Gender @unique
@@ -116,8 +124,8 @@ model User {
   doctor            Doctor?         @relation("UserToDoctor")
   receptionist      Receptionist?   @relation("UserToReceptionist")
   admin             Admin?          @relation("UserToAdmin")
-  assignedTasks     Task[]          @relation("TaskAssignees")  // Many-to-many (new)
-  assignorTasks     Task[]          @relation("UserToAssignor") // One-to-many (existing)
+  assignedTasks     Task[]          @relation("TaskAssignees")
+  assignorTasks     Task[]          @relation("UserToAssignor")
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
@@ -135,6 +143,7 @@ model Patient {
 
   @@map("patients")
 }
+
 model Doctor {
   userId       Int           @id
   user         User          @relation("UserToDoctor", fields: [userId], references: [id], onDelete: Cascade)
@@ -217,17 +226,10 @@ model Payment {
   action      Action        @relation(fields: [actionId], references: [id], onDelete: Cascade)
 }
 
-model Category {
-  id          Int         @id @default(autoincrement())
-  name        String      @unique
-  inventories Inventory[]
-}
-
 model Inventory {
   id         Int             @id @default(autoincrement())
   name       String
-  categoryId Int
-  category   Category        @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  category   CategoryEnum
   quantity   Int
   unit       InventoryUnit
   status     InventoryStatus
@@ -242,7 +244,7 @@ model Task {
   description  String?
   assignorId   Int
   assignor     User         @relation("UserToAssignor", fields: [assignorId], references: [id])
-  assignees    User[]       @relation("TaskAssignees")  // Many-to-many
+  assignees    User[]       @relation("TaskAssignees")
   priority     TaskPriority @default(MEDIUM)
   status       TaskStatus   @default(PENDING)
   dueDate      DateTime

@@ -1,639 +1,315 @@
-const {
-  PrismaClient,
-  Role,
-  Gender,
-  AppointmentStatusEnum,
-  PaymentStatusEnum,
-  QueueStatusEnum,
-  AppointmentTypeEnum,
-  InventoryUnit,
-  InventoryStatus,
-  TaskStatus,
-  TaskPriority,
-} = require("@prisma/client");
-const { hash } = require("bcrypt");
-const { v4: uuidv4 } = require("uuid"); // Added for generating unique task IDs
+const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log(`Start seeding...`);
-
-  // Clear existing data (Optional - comment out if not needed)
-  await clearDatabase();
-
-  // Create Sex entries
-  const maleGender = await prisma.sex.create({
-    data: {
-      gender: Gender.MALE,
-    },
+  // Create enum records first
+  await prisma.sex.createMany({
+    data: [
+      { gender: 'MALE' },
+      { gender: 'FEMALE' }
+    ]
   });
 
-  const femaleGender = await prisma.sex.create({
-    data: {
-      gender: Gender.FEMALE,
-    },
+  await prisma.appointmentStatus.createMany({
+    data: [
+      { status: 'WAITING' },
+      { status: 'UPCOMING' },
+      { status: 'COMPLETED' }
+    ]
   });
 
-  console.log(`Created gender entries`);
-
-  // Create AppointmentStatus entries
-  const waitingStatus = await prisma.appointmentStatus.create({
-    data: {
-      status: AppointmentStatusEnum.WAITING,
-    },
+  await prisma.appointmentType.createMany({
+    data: [
+      { type: 'GENERAL' },
+      { type: 'SPECIALIST' },
+      { type: 'FOLLOW_UP' },
+      { type: 'EMERGENCY' }
+    ]
   });
 
-  const upcomingStatus = await prisma.appointmentStatus.create({
-    data: {
-      status: AppointmentStatusEnum.UPCOMING,
-    },
+  await prisma.paymentStatus.createMany({
+    data: [
+      { status: 'PENDING' },
+      { status: 'PAID' },
+      { status: 'CANCELLED' }
+    ]
   });
 
-  const completedStatus = await prisma.appointmentStatus.create({
-    data: {
-      status: AppointmentStatusEnum.COMPLETED,
-    },
-  });
-
-  console.log(`Created appointment status entries`);
-
-  // Create AppointmentType entries
-  const generalType = await prisma.appointmentType.create({
-    data: {
-      type: AppointmentTypeEnum.GENERAL,
-    },
-  });
-
-  const specialistType = await prisma.appointmentType.create({
-    data: {
-      type: AppointmentTypeEnum.SPECIALIST,
-    },
-  });
-
-  const followUpType = await prisma.appointmentType.create({
-    data: {
-      type: AppointmentTypeEnum.FOLLOW_UP,
-    },
-  });
-
-  const emergencyType = await prisma.appointmentType.create({
-    data: {
-      type: AppointmentTypeEnum.EMERGENCY,
-    },
-  });
-
-  console.log(`Created appointment type entries`);
-
-  // Create PaymentStatus entries
-  const pendingPayment = await prisma.paymentStatus.create({
-    data: {
-      status: PaymentStatusEnum.PENDING,
-    },
-  });
-
-  const paidPayment = await prisma.paymentStatus.create({
-    data: {
-      status: PaymentStatusEnum.PAID,
-    },
-  });
-
-  const cancelledPayment = await prisma.paymentStatus.create({
-    data: {
-      status: PaymentStatusEnum.CANCELLED,
-    },
-  });
-
-  console.log(`Created payment status entries`);
-
-  // Create Users with different roles
-  const hashedPassword = await hash("password123", 10);
+  // Create users with related records
+  const male = await prisma.sex.findUnique({ where: { gender: 'MALE' } });
+  const female = await prisma.sex.findUnique({ where: { gender: 'FEMALE' } });
 
   // Admin user
   const adminUser = await prisma.user.create({
     data: {
-      email: "admin@hospital.com",
-      password: hashedPassword,
-      firstName: "Admin",
-      lastName: "User",
-      dateOfBirth: new Date("1980-01-15"),
-      phone: "+1234567890",
-      sexId: maleGender.id,
+      email: 'admin@clinic.com',
+      password: '$2b$10$examplehashedpassword',
+      firstName: 'Admin',
+      lastName: 'User',
+      dateOfBirth: new Date('1980-01-01'),
+      phone: '1234567890',
+      sexId: male.id,
       isVerified: true,
-      role: Role.ADMIN,
+      role: 'ADMIN',
       admin: {
-        create: {},
-      },
-    },
+        create: {}
+      }
+    }
   });
 
   // Doctor users
-  const doctorUsers = [];
-  const doctorData = [
-    {
-      firstName: "John",
-      lastName: "Smith",
-      email: "john.smith@hospital.com",
-      sex: maleGender.id,
-    },
-    {
-      firstName: "Jane",
-      lastName: "Doe",
-      email: "jane.doe@hospital.com",
-      sex: femaleGender.id,
-    },
-    {
-      firstName: "Robert",
-      lastName: "Johnson",
-      email: "robert.johnson@hospital.com",
-      sex: maleGender.id,
-    },
-  ];
-
-  for (const doctor of doctorData) {
-    const newDoctor = await prisma.user.create({
-      data: {
-        email: doctor.email,
-        password: hashedPassword,
-        firstName: doctor.firstName,
-        lastName: doctor.lastName,
-        dateOfBirth: new Date(
-          1975 + Math.floor(Math.random() * 15),
-          Math.floor(Math.random() * 12),
-          Math.floor(Math.random() * 28) + 1
-        ),
-        phone: `+1${Math.floor(Math.random() * 10000000000)
-          .toString()
-          .padStart(10, "0")}`,
-        sexId: doctor.sex,
-        isVerified: true,
-        role: Role.DOCTOR,
-        doctor: {
-          create: {},
-        },
-      },
-    });
-    doctorUsers.push(newDoctor);
-  }
-
-  console.log(`Created ${doctorUsers.length} doctor users`);
-
-  // Receptionist user
-  const receptionistUser = await prisma.user.create({
+  const doctor1 = await prisma.user.create({
     data: {
-      email: "receptionist@hospital.com",
-      password: hashedPassword,
-      firstName: "Rebecca",
-      lastName: "Taylor",
-      dateOfBirth: new Date("1990-05-20"),
-      phone: "+1987654321",
-      sexId: femaleGender.id,
+      email: 'doctor1@clinic.com',
+      password: '$2b$10$examplehashedpassword',
+      firstName: 'John',
+      lastName: 'Smith',
+      dateOfBirth: new Date('1975-05-15'),
+      phone: '1234567891',
+      sexId: male.id,
       isVerified: true,
-      role: Role.RECEPTIONIST,
-      receptionist: {
-        create: {},
-      },
-    },
+      role: 'DOCTOR',
+      doctor: {
+        create: {}
+      }
+    }
   });
 
-  console.log(`Created receptionist user`);
+  const doctor2 = await prisma.user.create({
+    data: {
+      email: 'doctor2@clinic.com',
+      password: '$2b$10$examplehashedpassword',
+      firstName: 'Sarah',
+      lastName: 'Johnson',
+      dateOfBirth: new Date('1982-08-20'),
+      phone: '1234567892',
+      sexId: female.id,
+      isVerified: true,
+      role: 'DOCTOR',
+      doctor: {
+        create: {}
+      }
+    }
+  });
+
+  // Receptionist user
+  const receptionist = await prisma.user.create({
+    data: {
+      email: 'reception@clinic.com',
+      password: '$2b$10$examplehashedpassword',
+      firstName: 'Emily',
+      lastName: 'Davis',
+      dateOfBirth: new Date('1990-03-10'),
+      phone: '1234567893',
+      sexId: female.id,
+      isVerified: true,
+      role: 'RECEPTIONIST',
+      receptionist: {
+        create: {}
+      }
+    }
+  });
 
   // Patient users
-  const patientUsers = [];
-  const patientData = [
-    {
-      firstName: "Michael",
-      lastName: "Brown",
-      email: "michael.brown@example.com",
-      sex: maleGender.id,
-      medicalHistory: "Hypertension, Diabetes Type 2",
-    },
-    {
-      firstName: "Emily",
-      lastName: "Wilson",
-      email: "emily.wilson@example.com",
-      sex: femaleGender.id,
-      medicalHistory: "Asthma, Allergies to penicillin",
-    },
-    {
-      firstName: "David",
-      lastName: "Miller",
-      email: "david.miller@example.com",
-      sex: maleGender.id,
-      medicalHistory: "Knee surgery in 2020",
-    },
-    {
-      firstName: "Sarah",
-      lastName: "Jones",
-      email: "sarah.jones@example.com",
-      sex: femaleGender.id,
-      medicalHistory: "Depression, Anxiety",
-    },
-    {
-      firstName: "Thomas",
-      lastName: "Garcia",
-      email: "thomas.garcia@example.com",
-      sex: maleGender.id,
-      medicalHistory: "No significant medical history",
-    },
-  ];
-
-  for (const patient of patientData) {
-    const newPatient = await prisma.user.create({
-      data: {
-        email: patient.email,
-        password: hashedPassword,
-        firstName: patient.firstName,
-        lastName: patient.lastName,
-        dateOfBirth: new Date(
-          1960 + Math.floor(Math.random() * 40),
-          Math.floor(Math.random() * 12),
-          Math.floor(Math.random() * 28) + 1
-        ),
-        phone: `+1${Math.floor(Math.random() * 10000000000)
-          .toString()
-          .padStart(10, "0")}`,
-        sexId: patient.sex,
-        isVerified: true,
-        role: Role.PATIENT,
-        patient: {
-          create: {
-            medicalHistory: patient.medicalHistory,
-          },
-        },
-      },
-    });
-    patientUsers.push(newPatient);
-  }
-
-  console.log(`Created ${patientUsers.length} patient users`);
-
-  // Create Actions for patients
-  const actions = [];
-  for (const patient of patientUsers) {
-    const appointmentTypeIds = [
-      generalType.id,
-      specialistType.id,
-      followUpType.id,
-      emergencyType.id,
-    ];
-
-    // Create 1-3 actions per patient
-    const numActions = Math.floor(Math.random() * 3) + 1;
-
-    for (let i = 0; i < numActions; i++) {
-      const typeId =
-        appointmentTypeIds[
-          Math.floor(Math.random() * appointmentTypeIds.length)
-        ];
-      const completed = Math.random() > 0.5;
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - Math.floor(Math.random() * 30));
-
-      let endDate = null;
-      let completedAt = null;
-
-      if (completed) {
-        endDate = new Date(startDate);
-        endDate.setDate(endDate.getDate() + Math.floor(Math.random() * 14) + 1);
-        completedAt = endDate;
+  const patient1 = await prisma.user.create({
+    data: {
+      email: 'patient1@example.com',
+      password: '$2b$10$examplehashedpassword',
+      firstName: 'Michael',
+      lastName: 'Brown',
+      dateOfBirth: new Date('1995-07-22'),
+      phone: '1234567894',
+      sexId: male.id,
+      isVerified: true,
+      role: 'PATIENT',
+      patient: {
+        create: {
+          medicalHistory: 'No significant medical history'
+        }
       }
-
-      const action = await prisma.action.create({
-        data: {
-          appointmentTypeId: typeId,
-          patientId: patient.id,
-          description: getActionDescription(typeId, appointmentTypeIds),
-          totalPayment: Math.floor(Math.random() * 500) + 50,
-          startDate,
-          endDate,
-          isCompleted: completed,
-          completedAt,
-        },
-      });
-
-      actions.push(action);
     }
-  }
+  });
 
-  console.log(`Created ${actions.length} actions`);
-
-  // Create Appointments
-  const appointments = [];
-  for (const action of actions) {
-    // Get a random doctor
-    const doctor = doctorUsers[Math.floor(Math.random() * doctorUsers.length)];
-
-    // Set the appointment date (in the future for some, in the past for others)
-    const futureAppointment = Math.random() > 0.3;
-    const appointmentDate = new Date();
-
-    if (futureAppointment) {
-      appointmentDate.setDate(
-        appointmentDate.getDate() + Math.floor(Math.random() * 30) + 1
-      );
-    } else {
-      appointmentDate.setDate(
-        appointmentDate.getDate() - Math.floor(Math.random() * 30)
-      );
+  const patient2 = await prisma.user.create({
+    data: {
+      email: 'patient2@example.com',
+      password: '$2b$10$examplehashedpassword',
+      firstName: 'Jessica',
+      lastName: 'Wilson',
+      dateOfBirth: new Date('1988-11-30'),
+      phone: '1234567895',
+      sexId: female.id,
+      isVerified: true,
+      role: 'PATIENT',
+      patient: {
+        create: {
+          medicalHistory: 'Allergic to penicillin'
+        }
+      }
     }
+  });
 
-    // Set appointment time
-    const appointmentTime = new Date();
-    appointmentTime.setHours(
-      9 + Math.floor(Math.random() * 8),
-      Math.floor(Math.random() * 12) * 5,
-      0
-    );
+  // Get appointment types and statuses
+  const generalAppt = await prisma.appointmentType.findUnique({ where: { type: 'GENERAL' } });
+  const specialistAppt = await prisma.appointmentType.findUnique({ where: { type: 'SPECIALIST' } });
+  const waitingStatus = await prisma.appointmentStatus.findUnique({ where: { status: 'WAITING' } });
+  const upcomingStatus = await prisma.appointmentStatus.findUnique({ where: { status: 'UPCOMING' } });
 
-    // Determine status
-    let statusId;
-    if (!futureAppointment) {
-      statusId = completedStatus.id; // Past appointments are completed
-    } else if (Math.random() > 0.5) {
-      statusId = upcomingStatus.id; // Future appointments are upcoming
-    } else {
-      statusId = waitingStatus.id; // Some future appointments are waiting
+  // Create actions
+  const action1 = await prisma.action.create({
+    data: {
+      appointmentTypeId: generalAppt.id,
+      patientId: patient1.id,
+      description: 'Annual checkup',
+      totalPayment: 100.00
     }
+  });
 
-    const appointment = await prisma.appointment.create({
-      data: {
-        patientId: action.patientId,
-        doctorId: doctor.id,
-        actionId: action.id,
-        statusId,
-        date: appointmentDate,
-        time: appointmentTime,
-        additionalNotes: Math.random() > 0.7 ? getRandomNotes() : null,
-      },
-    });
-
-    appointments.push(appointment);
-  }
-
-  console.log(`Created ${appointments.length} appointments`);
-
-  // Create Queue entries for some waiting appointments
-  const waitingAppointments = appointments.filter(
-    (a) => a.statusId === waitingStatus.id
-  );
-
-  for (const appointment of waitingAppointments) {
-    const queueStatuses = [
-      QueueStatusEnum.WAITING,
-      QueueStatusEnum.IN_PROGRESS,
-    ];
-    const queueStatus =
-      queueStatuses[Math.floor(Math.random() * queueStatuses.length)];
-
-    await prisma.queue.create({
-      data: {
-        patientId: appointment.patientId,
-        appointmentId: appointment.id,
-        estimatedWaitTime: Math.floor(Math.random() * 60) + 10, // 10-70 minutes
-        estimatedTimeToDoctor: Math.floor(Math.random() * 30) + 5, // 5-35 minutes
-        status: queueStatus,
-      },
-    });
-  }
-
-  console.log(`Created queue entries for waiting appointments`);
-
-  // Create Payments
-  for (const action of actions) {
-    const paymentStatusIds = [
-      pendingPayment.id,
-      paidPayment.id,
-      cancelledPayment.id,
-    ];
-    const statusId = action.isCompleted
-      ? Math.random() > 0.2
-        ? paidPayment.id
-        : pendingPayment.id
-      : paymentStatusIds[Math.floor(Math.random() * paymentStatusIds.length)];
-
-    // Get a random doctor
-    const appointment = appointments.find((a) => a.actionId === action.id);
-    if (!appointment) continue;
-
-    const paymentDate = new Date(action.startDate);
-    const paymentTime = new Date();
-    paymentTime.setHours(
-      9 + Math.floor(Math.random() * 8),
-      Math.floor(Math.random() * 12) * 5,
-      0
-    );
-
-    await prisma.payment.create({
-      data: {
-        patientId: action.patientId,
-        doctorId: appointment.doctorId,
-        statusId,
-        actionId: action.id,
-        amount: action.totalPayment,
-        date: paymentDate,
-        time: paymentTime,
-        description: `Payment for ${getActionDescription(
-          action.appointmentTypeId,
-          [generalType.id, specialistType.id, followUpType.id, emergencyType.id]
-        )}`,
-      },
-    });
-  }
-
-  console.log(`Created payments for actions`);
-
-  // Create Categories
-  const categories = [
-    { name: "Medications" },
-    { name: "Medical Supplies" },
-    { name: "Equipment" },
-    { name: "Laboratory" },
-    { name: "Office Supplies" },
-  ];
-
-  const createdCategories = [];
-
-  for (const category of categories) {
-    const createdCategory = await prisma.category.create({
-      data: {
-        name: category.name,
-      },
-    });
-    createdCategories.push(createdCategory);
-  }
-
-  console.log(`Created ${createdCategories.length} inventory categories`);
-
-  // Create Inventory items
-  const inventoryItems = [
-    {
-      name: "Paracetamol 500mg",
-      categoryName: "Medications",
-      unit: InventoryUnit.BOXES,
-      quantity: 150,
-    },
-    // ... (rest of the inventory items remain the same)
-  ];
-
-  for (const item of inventoryItems) {
-    const category = createdCategories.find(
-      (c) => c.name === item.categoryName
-    );
-    if (!category) continue;
-
-    const status =
-      item.quantity > 50
-        ? InventoryStatus.IN_STOCK
-        : item.quantity > 20
-        ? InventoryStatus.LOW_STOCK
-        : InventoryStatus.OUT_OF_STOCK;
-
-    // Create expiry date for medications
-    let expiryDate = null;
-    if (item.categoryName === "Medications") {
-      expiryDate = new Date();
-      expiryDate.setFullYear(
-        expiryDate.getFullYear() + 1 + Math.floor(Math.random() * 2)
-      );
+  const action2 = await prisma.action.create({
+    data: {
+      appointmentTypeId: specialistAppt.id,
+      patientId: patient2.id,
+      description: 'Cardiology consultation',
+      totalPayment: 200.00
     }
+  });
 
-    await prisma.inventory.create({
-      data: {
-        name: item.name,
-        categoryId: category.id,
-        quantity: item.quantity,
-        unit: item.unit,
-        status,
-        expiryDate,
-      },
-    });
-  }
+  // Create appointments
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
 
-  console.log(`Created inventory items`);
-
-  // Create Tasks
-  const taskTitles = [
-    "Review patient charts",
-    "Order new medical supplies",
-    "Schedule staff meeting",
-    "Update patient records",
-    "Prepare monthly report",
-    "Maintenance check for equipment",
-    "Contact lab for test results",
-    "Follow up with patients",
-    "Inventory check",
-    "Training session preparation",
-  ];
-
-  const allStaffUsers = [...doctorUsers, adminUser, receptionistUser];
-
-  for (let i = 0; i < 15; i++) {
-    const assignorId =
-      allStaffUsers[Math.floor(Math.random() * allStaffUsers.length)].id;
-    const assigneeIds = allStaffUsers
-      .filter((user) => user.id !== assignorId)
-      .map((user) => user.id);
-
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + Math.floor(Math.random() * 14) + 1);
-
-    const isCompleted = Math.random() > 0.7;
-    const status = isCompleted
-      ? TaskStatus.COMPLETED
-      : Math.random() > 0.5
-      ? TaskStatus.IN_PROGRESS
-      : TaskStatus.PENDING;
-
-    let completedAt = null;
-    if (isCompleted) {
-      completedAt = new Date();
-      completedAt.setDate(
-        completedAt.getDate() - Math.floor(Math.random() * 5)
-      );
+  await prisma.appointment.create({
+    data: {
+      patientId: patient1.id,
+      doctorId: doctor1.id,
+      actionId: action1.id,
+      statusId: waitingStatus.id,
+      date: today,
+      time: today,
+      additionalNotes: 'Patient has high blood pressure'
     }
+  });
 
-    const priority =
-      Math.random() > 0.7
-        ? TaskPriority.HIGH
-        : Math.random() > 0.5
-        ? TaskPriority.MEDIUM
-        : TaskPriority.LOW;
+  await prisma.appointment.create({
+    data: {
+      patientId: patient2.id,
+      doctorId: doctor2.id,
+      actionId: action2.id,
+      statusId: upcomingStatus.id,
+      date: tomorrow,
+      time: tomorrow,
+      additionalNotes: 'Follow up from previous visit'
+    }
+  });
 
-    await prisma.task.create({
-      data: {
-        id: uuidv4(), // Use UUID for task ID
-        title: taskTitles[Math.floor(Math.random() * taskTitles.length)],
-        description:
-          Math.random() > 0.3 ? "Detailed description for this task..." : null,
-        assignorId,
-        assignees: {
-          connect: assigneeIds.slice(0, Math.floor(Math.random() * 3) + 1)
-            .map((id) => ({ id })),
-        },
-        priority,
-        status,
-        dueDate,
-        completedAt,
+  // Create queue entries
+  await prisma.queue.create({
+    data: {
+      patientId: patient1.id,
+      appointmentId: 1,
+      estimatedWaitTime: 15,
+      estimatedTimeToDoctor: 30,
+      status: 'WAITING'
+    }
+  });
+
+  // Get payment statuses
+  const pendingPayment = await prisma.paymentStatus.findUnique({ where: { status: 'PENDING' } });
+  const paidPayment = await prisma.paymentStatus.findUnique({ where: { status: 'PAID' } });
+
+  // Create payments
+  await prisma.payment.create({
+    data: {
+      patientId: patient1.id,
+      doctorId: doctor1.id,
+      statusId: pendingPayment.id,
+      actionId: action1.id,
+      amount: 50.00,
+      date: today,
+      time: today,
+      description: 'Initial deposit'
+    }
+  });
+
+  await prisma.payment.create({
+    data: {
+      patientId: patient2.id,
+      doctorId: doctor2.id,
+      statusId: paidPayment.id,
+      actionId: action2.id,
+      amount: 200.00,
+      date: today,
+      time: today,
+      description: 'Full payment'
+    }
+  });
+
+  // Create inventory items
+  await prisma.inventory.createMany({
+    data: [
+      {
+        name: 'Paracetamol',
+        category: 'MEDICATIONS',
+        quantity: 100,
+        unit: 'PACKS',
+        status: 'IN_STOCK',
+        expiryDate: new Date('2026-12-31')
       },
-    });
-  }
+      {
+        name: 'Bandages',
+        category: 'MEDICAL_SUPPLIES',
+        quantity: 50,
+        unit: 'BOXES',
+        status: 'IN_STOCK'
+      },
+      {
+        name: 'Stethoscope',
+        category: 'EQUIPMENT',
+        quantity: 10,
+        unit: 'PCS',
+        status: 'LOW_STOCK'
+      }
+    ]
+  });
 
-  console.log(`Created tasks`);
+  // Create tasks
+  await prisma.task.create({
+    data: {
+      title: 'Review patient files',
+      description: 'Review files for upcoming appointments',
+      assignorId: adminUser.id,
+      assignees: {
+        connect: [{ id: receptionist.id }]
+      },
+      priority: 'MEDIUM',
+      status: 'PENDING',
+      dueDate: tomorrow
+    }
+  });
 
-  console.log(`Seeding completed.`);
-}
+  await prisma.task.create({
+    data: {
+      title: 'Order medical supplies',
+      description: 'Order more bandages and gloves',
+      assignorId: adminUser.id,
+      assignees: {
+        connect: [{ id: receptionist.id }]
+      },
+      priority: 'HIGH',
+      status: 'PENDING',
+      dueDate: new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000) // 3 days from now
+    }
+  });
 
-// Helper Functions
-function getActionDescription(typeId, typeIds) {
-  if (typeId === typeIds[0]) return "General health checkup";
-  if (typeId === typeIds[1]) return "Consultation with specialist";
-  if (typeId === typeIds[2]) return "Follow-up after treatment";
-  if (typeId === typeIds[3]) return "Emergency care";
-  return "Medical consultation";
-}
-
-function getRandomNotes() {
-  const notes = [
-    "Patient reports persistent headaches",
-    "Follow up on medication effectiveness",
-    "Discuss lab results from previous visit",
-    "Blood pressure monitoring required",
-    "Patient has questions about new symptoms",
-    "Check previous treatment effectiveness",
-    "Annual physical examination",
-  ];
-
-  return notes[Math.floor(Math.random() * notes.length)];
-}
-
-async function clearDatabase() {
-  // Delete related records first to maintain referential integrity
-  await prisma.task.deleteMany({});
-  await prisma.inventory.deleteMany({});
-  await prisma.category.deleteMany({});
-  await prisma.queue.deleteMany({});
-  await prisma.payment.deleteMany({});
-  await prisma.appointment.deleteMany({});
-  await prisma.action.deleteMany({});
-  await prisma.patient.deleteMany({});
-  await prisma.doctor.deleteMany({});
-  await prisma.receptionist.deleteMany({});
-  await prisma.admin.deleteMany({});
-  await prisma.user.deleteMany({});
-  await prisma.paymentStatus.deleteMany({});
-  await prisma.appointmentType.deleteMany({});
-  await prisma.appointmentStatus.deleteMany({});
-  await prisma.sex.deleteMany({});
-
-  console.log("Database cleared");
+  console.log('Seeding completed successfully');
 }
 
 main()
-  .then(async () => {
-    await prisma.$disconnect();
-  })
-  .catch(async (e) => {
+  .catch((e) => {
     console.error(e);
-    await prisma.$disconnect();
     process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
   });
