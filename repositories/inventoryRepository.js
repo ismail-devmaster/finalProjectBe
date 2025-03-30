@@ -15,7 +15,6 @@ const createInventory = async (data) => {
 
 const getAllInventories = async () => {
   return await prisma.inventory.findMany({
-    include: { category: true },
     orderBy: { createdAt: "desc" },
   });
 };
@@ -23,7 +22,6 @@ const getAllInventories = async () => {
 const getInventoryById = async (id) => {
   return await prisma.inventory.findUnique({
     where: { id: Number(id) },
-    include: { category: true },
   });
 };
 
@@ -50,7 +48,6 @@ const deleteInventory = async (id) => {
 const getLowInventories = async () => {
   return await prisma.inventory.findMany({
     where: { status: "LOW_STOCK" },
-    include: { category: true },
     orderBy: { createdAt: "desc" },
   });
 };
@@ -58,7 +55,6 @@ const getLowInventories = async () => {
 const getInStockInventories = async () => {
   return await prisma.inventory.findMany({
     where: { status: "IN_STOCK" },
-    include: { category: true },
     orderBy: { createdAt: "desc" },
   });
 };
@@ -66,7 +62,6 @@ const getInStockInventories = async () => {
 const getOutOfStockInventories = async () => {
   return await prisma.inventory.findMany({
     where: { status: "OUT_OF_STOCK" },
-    include: { category: true },
     orderBy: { createdAt: "desc" },
   });
 };
