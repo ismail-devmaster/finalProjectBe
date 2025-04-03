@@ -93,9 +93,10 @@ model AppointmentStatus {
 }
 
 model AppointmentType {
-  id      Int                 @id @default(autoincrement())
-  type    AppointmentTypeEnum @unique
-  actions Action[]
+  id                Int                 @id @default(autoincrement())
+  type              AppointmentTypeEnum @unique
+  requiredSpecialty AppointmentTypeEnum
+  actions           Action[]
 }
 
 model PaymentStatus {
@@ -105,36 +106,36 @@ model PaymentStatus {
 }
 
 model User {
-  id                Int             @id @default(autoincrement())
-  email             String          @unique
+  id                Int           @id @default(autoincrement())
+  email             String        @unique
   password          String
   firstName         String
   lastName          String
   dateOfBirth       DateTime
   phone             String?
   sexId             Int
-  sex               Sex             @relation(fields: [sexId], references: [id])
-  isVerified        Boolean         @default(false)
-  verificationToken String?         @unique
-  resetToken        String?         @unique
+  sex               Sex           @relation(fields: [sexId], references: [id])
+  isVerified        Boolean       @default(false)
+  verificationToken String?       @unique
+  resetToken        String?       @unique
   resetTokenExpiry  DateTime?
   refreshToken      String?
-  role              Role            @default(PATIENT)
-  patient           Patient?        @relation("UserToPatient")
-  doctor            Doctor?         @relation("UserToDoctor")
-  receptionist      Receptionist?   @relation("UserToReceptionist")
-  admin             Admin?          @relation("UserToAdmin")
-  assignedTasks     Task[]          @relation("TaskAssignees")
-  assignorTasks     Task[]          @relation("UserToAssignor")
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  role              Role          @default(PATIENT)
+  patient           Patient?      @relation("UserToPatient")
+  doctor            Doctor?       @relation("UserToDoctor")
+  receptionist      Receptionist? @relation("UserToReceptionist")
+  admin             Admin?        @relation("UserToAdmin")
+  assignedTasks     Task[]        @relation("TaskAssignees")
+  assignorTasks     Task[]        @relation("UserToAssignor")
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
   @@map("users")
 }
 
 model Patient {
-  userId         Int            @id
-  user           User           @relation("UserToPatient", fields: [userId], references: [id], onDelete: Cascade)
+  userId         Int           @id
+  user           User          @relation("UserToPatient", fields: [userId], references: [id], onDelete: Cascade)
   medicalHistory String?
   appointments   Appointment[]
   payments       Payment[]
@@ -145,8 +146,9 @@ model Patient {
 }
 
 model Doctor {
-  userId       Int           @id
-  user         User          @relation("UserToDoctor", fields: [userId], references: [id], onDelete: Cascade)
+  userId       Int                 @id
+  user         User                @relation("UserToDoctor", fields: [userId], references: [id], onDelete: Cascade)
+  specialty    AppointmentTypeEnum
   appointments Appointment[]
   payments     Payment[]
 
@@ -154,33 +156,33 @@ model Doctor {
 }
 
 model Receptionist {
-  userId Int @id
-  user   User   @relation("UserToReceptionist", fields: [userId], references: [id], onDelete: Cascade)
+  userId Int  @id
+  user   User @relation("UserToReceptionist", fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("receptionists")
 }
 
 model Admin {
-  userId Int @id
-  user   User   @relation("UserToAdmin", fields: [userId], references: [id])
-  
+  userId Int  @id
+  user   User @relation("UserToAdmin", fields: [userId], references: [id])
+
   @@map("admins")
 }
 
 model Action {
-  id                   Int               @id @default(autoincrement())
-  appointmentTypeId    Int
-  patientId            Int
-  description          String?
-  totalPayment         Float             @default(0.00)
-  startDate            DateTime          @default(now())
-  endDate              DateTime?
-  patient              Patient           @relation(fields: [patientId], references: [userId], onDelete: Cascade)
-  appointmentType      AppointmentType   @relation(fields: [appointmentTypeId], references: [id], onDelete: Cascade)
-  appointments         Appointment[]
-  payments             Payment[]
-  isCompleted          Boolean           @default(false)
-  completedAt DateTime?
+  id                Int             @id @default(autoincrement())
+  appointmentTypeId Int
+  patientId         Int
+  description       String?
+  totalPayment      Float           @default(0.00)
+  startDate         DateTime        @default(now())
+  endDate           DateTime?
+  patient           Patient         @relation(fields: [patientId], references: [userId], onDelete: Cascade)
+  appointmentType   AppointmentType @relation(fields: [appointmentTypeId], references: [id], onDelete: Cascade)
+  appointments      Appointment[]
+  payments          Payment[]
+  isCompleted       Boolean         @default(false)
+  completedAt       DateTime?
 }
 
 model Appointment {
@@ -239,16 +241,16 @@ model Inventory {
 }
 
 model Task {
-  id           String       @id @default(cuid())
-  title        String
-  description  String?
-  assignorId   Int
-  assignor     User         @relation("UserToAssignor", fields: [assignorId], references: [id])
-  assignees    User[]       @relation("TaskAssignees")
-  priority     TaskPriority @default(MEDIUM)
-  status       TaskStatus   @default(PENDING)
-  dueDate      DateTime
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  completedAt  DateTime?
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  assignorId  Int
+  assignor    User         @relation("UserToAssignor", fields: [assignorId], references: [id])
+  assignees   User[]       @relation("TaskAssignees")
+  priority    TaskPriority @default(MEDIUM)
+  status      TaskStatus   @default(PENDING)
+  dueDate     DateTime
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  completedAt DateTime?
 }

@@ -1,313 +1,193 @@
-const { PrismaClient } = require('@prisma/client');
+// import { PrismaClient } from "@prisma/client";
+// import { faker } from "@faker-js/faker";
+
+const { PrismaClient } = require("@prisma/client");
+const { faker } = require("@faker-js/faker");
+
 const prisma = new PrismaClient();
 
 async function main() {
-  // Create enum records first
+  // Seed Sex table
   await prisma.sex.createMany({
-    data: [
-      { gender: 'MALE' },
-      { gender: 'FEMALE' }
-    ]
+    data: [{ gender: "MALE" }, { gender: "FEMALE" }],
+    skipDuplicates: true,
   });
 
+  // Seed AppointmentStatus
   await prisma.appointmentStatus.createMany({
     data: [
-      { status: 'WAITING' },
-      { status: 'UPCOMING' },
-      { status: 'COMPLETED' }
-    ]
+      { status: "WAITING" },
+      { status: "UPCOMING" },
+      { status: "COMPLETED" },
+    ],
+    skipDuplicates: true,
   });
 
+  // Seed AppointmentType
   await prisma.appointmentType.createMany({
     data: [
-      { type: 'GENERAL' },
-      { type: 'SPECIALIST' },
-      { type: 'FOLLOW_UP' },
-      { type: 'EMERGENCY' }
-    ]
+      { type: "GENERAL", requiredSpecialty: "GENERAL" },
+      { type: "SPECIALIST", requiredSpecialty: "SPECIALIST" },
+      { type: "FOLLOW_UP", requiredSpecialty: "FOLLOW_UP" },
+      { type: "EMERGENCY", requiredSpecialty: "EMERGENCY" },
+    ],
+    skipDuplicates: true,
   });
 
+  // Seed PaymentStatus
   await prisma.paymentStatus.createMany({
-    data: [
-      { status: 'PENDING' },
-      { status: 'PAID' },
-      { status: 'CANCELLED' }
-    ]
+    data: [{ status: "PENDING" }, { status: "PAID" }, { status: "CANCELLED" }],
+    skipDuplicates: true,
   });
 
-  // Create users with related records
-  const male = await prisma.sex.findUnique({ where: { gender: 'MALE' } });
-  const female = await prisma.sex.findUnique({ where: { gender: 'FEMALE' } });
-
-  // Admin user
+  // Create Admin
   const adminUser = await prisma.user.create({
     data: {
-      email: 'admin@clinic.com',
-      password: '$2b$10$examplehashedpassword',
-      firstName: 'Admin',
-      lastName: 'User',
-      dateOfBirth: new Date('1980-01-01'),
-      phone: '1234567890',
-      sexId: male.id,
-      isVerified: true,
-      role: 'ADMIN',
-      admin: {
-        create: {}
-      }
-    }
+      email: "admin@hospital.com",
+      password: "$2b$10$ExampleHash", // Replace with real hash
+      firstName: "Admin",
+      lastName: "User",
+      dateOfBirth: faker.date.past({ years: 30 }),
+      phone: faker.phone.number(),
+      sexId: 1,
+      role: "ADMIN",
+      admin: { create: {} },
+    },
   });
 
-  // Doctor users
-  const doctor1 = await prisma.user.create({
+  // Create Receptionist
+  const receptionistUser = await prisma.user.create({
     data: {
-      email: 'doctor1@clinic.com',
-      password: '$2b$10$examplehashedpassword',
-      firstName: 'John',
-      lastName: 'Smith',
-      dateOfBirth: new Date('1975-05-15'),
-      phone: '1234567891',
-      sexId: male.id,
-      isVerified: true,
-      role: 'DOCTOR',
-      doctor: {
-        create: {}
-      }
-    }
+      email: "reception@hospital.com",
+      password: "$2b$10$ExampleHash",
+      firstName: "Reception",
+      lastName: "Staff",
+      dateOfBirth: faker.date.past({ years: 25 }),
+      phone: faker.phone.number(),
+      sexId: 2,
+      role: "RECEPTIONIST",
+      receptionist: { create: {} },
+    },
   });
 
-  const doctor2 = await prisma.user.create({
-    data: {
-      email: 'doctor2@clinic.com',
-      password: '$2b$10$examplehashedpassword',
-      firstName: 'Sarah',
-      lastName: 'Johnson',
-      dateOfBirth: new Date('1982-08-20'),
-      phone: '1234567892',
-      sexId: female.id,
-      isVerified: true,
-      role: 'DOCTOR',
-      doctor: {
-        create: {}
-      }
-    }
-  });
+  // Create Doctors
+  const doctors = await Promise.all(
+    Array.from({ length: 5 }).map(async () => {
+      return prisma.user.create({
+        data: {
+          email: faker.internet.email(),
+          password: "$2b$10$ExampleHash",
+          firstName: faker.person.firstName(),
+          lastName: faker.person.lastName(),
+          dateOfBirth: faker.date.past({ years: 40 }),
+          phone: faker.phone.number(),
+          sexId: faker.number.int({ min: 1, max: 2 }),
+          role: "DOCTOR",
+          doctor: {
+            create: {
+              specialty: "SPECIALIST",
+            },
+          },
+        },
+      });
+    })
+  );
 
-  // Receptionist user
-  const receptionist = await prisma.user.create({
-    data: {
-      email: 'reception@clinic.com',
-      password: '$2b$10$examplehashedpassword',
-      firstName: 'Emily',
-      lastName: 'Davis',
-      dateOfBirth: new Date('1990-03-10'),
-      phone: '1234567893',
-      sexId: female.id,
-      isVerified: true,
-      role: 'RECEPTIONIST',
-      receptionist: {
-        create: {}
-      }
-    }
-  });
+  // Create Patients
+  const patients = await Promise.all(
+    Array.from({ length: 20 }).map(async () => {
+      return prisma.user.create({
+        data: {
+          email: faker.internet.email(),
+          password: "$2b$10$ExampleHash",
+          firstName: faker.person.firstName(),
+          lastName: faker.person.lastName(),
+          dateOfBirth: faker.date.past({ years: 60 }),
+          phone: faker.phone.number(),
+          sexId: faker.number.int({ min: 1, max: 2 }),
+          role: "PATIENT",
+          patient: {
+            create: {
+              medicalHistory: faker.lorem.paragraph(),
+            },
+          },
+        },
+      });
+    })
+  );
 
-  // Patient users
-  const patient1 = await prisma.user.create({
-    data: {
-      email: 'patient1@example.com',
-      password: '$2b$10$examplehashedpassword',
-      firstName: 'Michael',
-      lastName: 'Brown',
-      dateOfBirth: new Date('1995-07-22'),
-      phone: '1234567894',
-      sexId: male.id,
-      isVerified: true,
-      role: 'PATIENT',
-      patient: {
-        create: {
-          medicalHistory: 'No significant medical history'
-        }
-      }
-    }
-  });
+  // Create Actions
+  const actions = await Promise.all(
+    patients.map(async (patient) => {
+      return prisma.action.create({
+        data: {
+          patientId: patient.id,
+          appointmentTypeId: faker.number.int({ min: 1, max: 4 }),
+          description: faker.lorem.sentence(),
+          totalPayment: faker.number.float({ min: 50, max: 500 }),
+        },
+      });
+    })
+  );
 
-  const patient2 = await prisma.user.create({
-    data: {
-      email: 'patient2@example.com',
-      password: '$2b$10$examplehashedpassword',
-      firstName: 'Jessica',
-      lastName: 'Wilson',
-      dateOfBirth: new Date('1988-11-30'),
-      phone: '1234567895',
-      sexId: female.id,
-      isVerified: true,
-      role: 'PATIENT',
-      patient: {
-        create: {
-          medicalHistory: 'Allergic to penicillin'
-        }
-      }
-    }
-  });
+  // Create Appointments
+  await Promise.all(
+    patients.map(async (patient) => {
+      return prisma.appointment.create({
+        data: {
+          patientId: patient.id,
+          doctorId: doctors[faker.number.int({ min: 0, max: 4 })].id,
+          actionId:
+            actions[faker.number.int({ min: 0, max: actions.length - 1 })].id,
+          statusId: faker.number.int({ min: 1, max: 3 }),
+          date: faker.date.future({ years: 1 }),
+          time: faker.date.soon({ days: 7 }),
+          additionalNotes: faker.lorem.sentence(),
+        },
+      });
+    })
+  );
 
-  // Get appointment types and statuses
-  const generalAppt = await prisma.appointmentType.findUnique({ where: { type: 'GENERAL' } });
-  const specialistAppt = await prisma.appointmentType.findUnique({ where: { type: 'SPECIALIST' } });
-  const waitingStatus = await prisma.appointmentStatus.findUnique({ where: { status: 'WAITING' } });
-  const upcomingStatus = await prisma.appointmentStatus.findUnique({ where: { status: 'UPCOMING' } });
-
-  // Create actions
-  const action1 = await prisma.action.create({
-    data: {
-      appointmentTypeId: generalAppt.id,
-      patientId: patient1.id,
-      description: 'Annual checkup',
-      totalPayment: 100.00
-    }
-  });
-
-  const action2 = await prisma.action.create({
-    data: {
-      appointmentTypeId: specialistAppt.id,
-      patientId: patient2.id,
-      description: 'Cardiology consultation',
-      totalPayment: 200.00
-    }
-  });
-
-  // Create appointments
-  const today = new Date();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
-  await prisma.appointment.create({
-    data: {
-      patientId: patient1.id,
-      doctorId: doctor1.id,
-      actionId: action1.id,
-      statusId: waitingStatus.id,
-      date: today,
-      time: today,
-      additionalNotes: 'Patient has high blood pressure'
-    }
-  });
-
-  await prisma.appointment.create({
-    data: {
-      patientId: patient2.id,
-      doctorId: doctor2.id,
-      actionId: action2.id,
-      statusId: upcomingStatus.id,
-      date: tomorrow,
-      time: tomorrow,
-      additionalNotes: 'Follow up from previous visit'
-    }
-  });
-
-  // Create queue entries
-  await prisma.queue.create({
-    data: {
-      patientId: patient1.id,
-      appointmentId: 1,
-      estimatedWaitTime: 15,
-      estimatedTimeToDoctor: 30,
-      status: 'WAITING'
-    }
-  });
-
-  // Get payment statuses
-  const pendingPayment = await prisma.paymentStatus.findUnique({ where: { status: 'PENDING' } });
-  const paidPayment = await prisma.paymentStatus.findUnique({ where: { status: 'PAID' } });
-
-  // Create payments
-  await prisma.payment.create({
-    data: {
-      patientId: patient1.id,
-      doctorId: doctor1.id,
-      statusId: pendingPayment.id,
-      actionId: action1.id,
-      amount: 50.00,
-      date: today,
-      time: today,
-      description: 'Initial deposit'
-    }
-  });
-
-  await prisma.payment.create({
-    data: {
-      patientId: patient2.id,
-      doctorId: doctor2.id,
-      statusId: paidPayment.id,
-      actionId: action2.id,
-      amount: 200.00,
-      date: today,
-      time: today,
-      description: 'Full payment'
-    }
-  });
-
-  // Create inventory items
+  // Create Inventory Items
   await prisma.inventory.createMany({
-    data: [
-      {
-        name: 'Paracetamol',
-        category: 'MEDICATIONS',
-        quantity: 100,
-        unit: 'PACKS',
-        status: 'IN_STOCK',
-        expiryDate: new Date('2026-12-31')
-      },
-      {
-        name: 'Bandages',
-        category: 'MEDICAL_SUPPLIES',
-        quantity: 50,
-        unit: 'BOXES',
-        status: 'IN_STOCK'
-      },
-      {
-        name: 'Stethoscope',
-        category: 'EQUIPMENT',
-        quantity: 10,
-        unit: 'PCS',
-        status: 'LOW_STOCK'
-      }
-    ]
+    data: Array.from({ length: 50 }).map(() => ({
+      name: faker.commerce.productName(),
+      category: faker.helpers.arrayElement([
+        "MEDICATIONS",
+        "MEDICAL_SUPPLIES",
+        "EQUIPMENT",
+      ]),
+      quantity: faker.number.int({ min: 1, max: 100 }),
+      unit: faker.helpers.arrayElement(["PCS", "BOXES", "BOTTLES"]),
+      status: faker.helpers.arrayElement(["IN_STOCK", "LOW_STOCK"]),
+      expiryDate: faker.date.future({ years: 2 }),
+    })),
   });
 
-  // Create tasks
-  await prisma.task.create({
-    data: {
-      title: 'Review patient files',
-      description: 'Review files for upcoming appointments',
-      assignorId: adminUser.id,
-      assignees: {
-        connect: [{ id: receptionist.id }]
-      },
-      priority: 'MEDIUM',
-      status: 'PENDING',
-      dueDate: tomorrow
-    }
-  });
+  // Create Tasks
+  await Promise.all(
+    Array.from({ length: 10 }).map(async () => {
+      return prisma.task.create({
+        data: {
+          title: faker.lorem.words(3),
+          description: faker.lorem.sentence(),
+          assignorId: adminUser.id,
+          assignees: {
+            connect: [{ id: receptionistUser.id }, { id: doctors[0].id }],
+          },
+          priority: faker.helpers.arrayElement(["HIGH", "MEDIUM", "LOW"]),
+          dueDate: faker.date.future({ days: 30 }),
+        },
+      });
+    })
+  );
 
-  await prisma.task.create({
-    data: {
-      title: 'Order medical supplies',
-      description: 'Order more bandages and gloves',
-      assignorId: adminUser.id,
-      assignees: {
-        connect: [{ id: receptionist.id }]
-      },
-      priority: 'HIGH',
-      status: 'PENDING',
-      dueDate: new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000) // 3 days from now
-    }
-  });
-
-  console.log('Seeding completed successfully');
+  console.log("Database seeded successfully!");
 }
 
 main()
   .catch((e) => {
-    console.error(e);
+    console.error("Seeding error:", e);
     process.exit(1);
   })
   .finally(async () => {
