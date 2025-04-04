@@ -138,9 +138,9 @@ const getAppointmentById = async (id) => {
   });
 };
 
-const getAppointmentByPatientId = async (id) => {
-  return await prisma.appointment.findUnique({
-    where: { patientId: Number(id) },
+const getAppointmentsByPatientId = async (patientId) => {
+  return await prisma.appointment.findMany({
+    where: { patientId: Number(patientId) },
     include: {
       status: true,
       queueEntries: true,
@@ -187,6 +187,7 @@ const getAppointmentByPatientId = async (id) => {
     },
   });
 };
+
 const getAppointmentsByActionId = async (actionId) => {
   return await prisma.appointment.findMany({
     where: { actionId: Number(actionId) },
@@ -388,13 +389,14 @@ const getAppointmentsByDoctorId = async (doctorId) => {
     },
   });
 };
+
 module.exports = {
   createAppointment,
   updateAppointment,
   deleteAppointment,
   getAllAppointments,
   getAppointmentById,
-  getAppointmentByPatientId,
+  getAppointmentsByPatientId,
   getAppointmentsByActionId,
   getAppointmentsWithWaitingStatus,
   getAppointmentsByDoctorId,

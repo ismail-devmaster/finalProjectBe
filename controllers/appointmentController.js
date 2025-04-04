@@ -70,17 +70,15 @@ exports.getAppointmentById = async (req, res) => {
   }
 };
 
-exports.getAppointmentByPatientId = async (req, res) => {
+exports.getAppointmentsByPatientId = async (req, res) => {
   try {
-    const appointment = await appointmentService.getAppointmentByPatientId(
-      req.params.id
+    const appointments = await appointmentService.getAppointmentsByPatientId(
+      req.params.patientId
     );
-    if (!appointment)
-      return res.status(404).json({ error: "Appointment not found" });
-    res.json({ appointment });
+    res.json({ appointments });
   } catch (error) {
-    console.error("Error fetching appointment:", error);
-    res.status(500).json({ error: "Failed to fetch appointment" });
+    console.error("Error fetching appointments:", error);
+    res.status(500).json({ error: "Failed to fetch appointments" });
   }
 };
 

@@ -6,6 +6,14 @@ const {
   authorizeRoles,
 } = require("../middlewares/authMiddleware");
 
+// GET /appointments - allowed for RECEPTIONIST, PATIENT, and DOCTOR
+router.get(
+  "/",
+  authenticateUser,
+  authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR", "ADMIN"),
+  appointmentController.getAllAppointments
+);
+
 // GET /appointments/waiting - allowed for RECEPTIONIST, PATIENT, DOCTOR
 router.get(
   "/waiting",
@@ -30,6 +38,14 @@ router.post(
   appointmentController.createAppointment
 );
 
+// GET /appointments/patient/:patientId - allowed for PATIENT (own appointments), DOCTOR, RECEPTIONIST, ADMIN
+router.get(
+  "/patient/:patientId",
+  authenticateUser,
+  authorizeRoles("PATIENT", "DOCTOR", "RECEPTIONIST", "ADMIN"),
+  appointmentController.getAppointmentsByPatientId
+);
+
 // PUT /appointments/:id - allowed for RECEPTIONIST, PATIENT, and DOCTOR
 router.put(
   "/:id",
@@ -44,14 +60,6 @@ router.delete(
   authenticateUser,
   authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR"),
   appointmentController.deleteAppointment
-);
-
-// GET /appointments - allowed for RECEPTIONIST, PATIENT, and DOCTOR
-router.get(
-  "/",
-  authenticateUser,
-  authorizeRoles("RECEPTIONIST", "PATIENT", "DOCTOR", "ADMIN"),
-  appointmentController.getAllAppointments
 );
 
 // GET /appointments/:id - allowed for RECEPTIONIST, PATIENT, and DOCTOR

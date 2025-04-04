@@ -20,8 +20,8 @@ const getAppointmentById = async (id) => {
   return await appointmentRepository.getAppointmentById(id);
 };
 
-const getAppointmentByPatientId = async (id) => {
-  return await appointmentRepository.getAppointmentByPatientId(id);
+const getAppointmentsByPatientId = async (patientId) => {
+  return await appointmentRepository.getAppointmentsByPatientId(patientId);
 };
 
 const getAppointmentsByActionId = async (actionId) => {
@@ -46,7 +46,7 @@ module.exports = {
   deleteAppointment,
   getAllAppointments,
   getAppointmentById,
-  getAppointmentByPatientId,
+  getAppointmentsByPatientId,
   getAppointmentsByActionId,
   getAppointmentsWithWaitingStatus,
   getAppointmentsByDoctorId,
