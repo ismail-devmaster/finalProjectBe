@@ -6,20 +6,19 @@ const {
   authorizeRoles,
 } = require("../middlewares/authMiddleware");
 
-// POST /actions - allowed for PATIENT and DOCTOR
-router.post(
-  "/",
-  authenticateUser,
-  authorizeRoles("PATIENT", "DOCTOR"),
-  actionController.createAction
-);
-
 // GET /actions - allowed for PATIENT, DOCTOR, and RECEPTIONIST
 router.get(
   "/",
   authenticateUser,
   authorizeRoles("PATIENT", "DOCTOR", "RECEPTIONIST", "ADMIN"),
   actionController.getAllActions
+);
+// POST /actions - allowed for PATIENT and DOCTOR
+router.post(
+  "/",
+  authenticateUser,
+  authorizeRoles("PATIENT", "DOCTOR", "ADMIN"),
+  actionController.createAction
 );
 
 // GET /actions/:id - allowed for PATIENT, DOCTOR, and RECEPTIONIST
