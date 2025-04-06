@@ -40,6 +40,25 @@ const getAppointmentsByDoctorId = async (doctorId) => {
   return await appointmentRepository.getAppointmentsByDoctorId(doctorId);
 };
 
+const getPatientsByDoctorId = async (doctorId) => {
+  const appointments = await appointmentRepository.getAppointmentsByDoctorId(doctorId);
+  
+  // Extract and deduplicate patients
+  const uniquePatients = new Map();
+  appointments.forEach(appointment => {
+    const patient = appointment.patient;
+    if (!uniquePatients.has(patient.user.id)) {
+      uniquePatients.set(patient.user.id, {
+        ...patient.user,
+        medicalHistory: patient.medicalHistory,
+        sex: patient.user.sex.gender.gender
+      });
+    }
+  });
+
+  return Array.from(uniquePatients.values());
+};
+
 module.exports = {
   createAppointment,
   updateAppointment,
@@ -50,5 +69,6 @@ module.exports = {
   getAppointmentsByActionId,
   getAppointmentsWithWaitingStatus,
   getAppointmentsByDoctorId,
+  getPatientsByDoctorId,
   getAppointmentsWithUpcomingStatus,
 };

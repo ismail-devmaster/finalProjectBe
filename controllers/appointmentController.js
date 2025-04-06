@@ -131,3 +131,14 @@ exports.getAppointmentsByDoctorId = async (req, res) => {
       .json({ error: "Failed to fetch appointments by doctor id" });
   }
 };
+
+exports.getPatientsByDoctorId = async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+    const patients = await appointmentService.getPatientsByDoctorId(doctorId);
+    res.json({ patients });
+  } catch (error) {
+    console.error("Error fetching patients by doctor id:", error);
+    res.status(500).json({ error: "Failed to fetch patients by doctor id" });
+  }
+};
