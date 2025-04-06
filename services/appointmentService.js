@@ -51,7 +51,6 @@ const getPatientsByDoctorId = async (doctorId) => {
       uniquePatients.set(patient.user.id, {
         ...patient.user,
         medicalHistory: patient.medicalHistory,
-        sex: patient.user.sex.gender.gender
       });
     }
   });
