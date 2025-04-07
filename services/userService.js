@@ -8,4 +8,8 @@ const getReceptionists = async () => {
   return await userRepository.getReceptionist();
 };
 
-module.exports = { getUsers, getReceptionists };
+const getReceptionistsAndDoctor = async (doctorId) => {
+  return await userRepository.getReceptionistsAndDoctor(doctorId);
+};
+
+module.exports = { getUsers, getReceptionists, getReceptionistsAndDoctor };

@@ -18,4 +18,18 @@ const getReceptionistsController = async (req, res) => {
   }
 };
 
-module.exports = { getUsersController, getReceptionistsController };
+const getReceptionistsAndDoctorController = async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+    const users = await userService.getReceptionistsAndDoctor(doctorId);
+    res.status(200).json(users);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { 
+  getUsersController, 
+  getReceptionistsController,
+  getReceptionistsAndDoctorController 
+};

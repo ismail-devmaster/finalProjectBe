@@ -13,4 +13,18 @@ const getReceptionist = async () => {
   });
 };
 
-module.exports = { getStaff, getReceptionist };
+const getReceptionistsAndDoctor = async (doctorId) => {
+  return await prisma.user.findMany({
+    where: {
+      OR: [
+        { role: "RECEPTIONIST" },
+        { AND: [
+          { role: "DOCTOR" },
+          { id: parseInt(doctorId) }
+        ]}
+      ]
+    }
+  });
+};
+
+module.exports = { getStaff, getReceptionist, getReceptionistsAndDoctor };
