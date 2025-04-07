@@ -147,8 +147,8 @@ const getAppointmentsByPatientId = async (patientId) => {
       status: true,
       queueEntries: true,
       action: {
-        totalPayment: true,
         select: {
+          totalPayment: true,
           appointmentType: {
             select: {
               id: true,
@@ -253,8 +253,8 @@ const getAppointmentsWithWaitingStatus = async () => {
       status: true,
       queueEntries: true,
       action: {
-        totalPayment: true,
         select: {
+          totalPayment: true,
           appointmentType: {
             select: {
               id: true,
@@ -308,8 +308,8 @@ const getAppointmentsWithUpcomingStatus = async () => {
       status: true,
       queueEntries: true,
       action: {
-        totalPayment: true,
         select: {
+          totalPayment: true,
           appointmentType: {
             select: { id: true, type: true },
           },
