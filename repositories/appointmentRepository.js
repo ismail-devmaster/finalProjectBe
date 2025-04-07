@@ -46,6 +46,7 @@ const getAllAppointments = async () => {
       queueEntries: true,
       action: {
         select: {
+          totalPayment: true,
           appointmentType: {
             select: {
               id: true,
@@ -96,6 +97,7 @@ const getAppointmentById = async (id) => {
       queueEntries: true,
       action: {
         select: {
+          totalPayment: true,
           appointmentType: {
             select: {
               id: true,
@@ -145,6 +147,7 @@ const getAppointmentsByPatientId = async (patientId) => {
       status: true,
       queueEntries: true,
       action: {
+        totalPayment: true,
         select: {
           appointmentType: {
             select: {
@@ -195,6 +198,7 @@ const getAppointmentsByActionId = async (actionId) => {
       status: true,
       queueEntries: true,
       action: {
+        totalPayment: true,
         select: {
           appointmentType: {
             select: {
@@ -249,6 +253,7 @@ const getAppointmentsWithWaitingStatus = async () => {
       status: true,
       queueEntries: true,
       action: {
+        totalPayment: true,
         select: {
           appointmentType: {
             select: {
@@ -303,6 +308,7 @@ const getAppointmentsWithUpcomingStatus = async () => {
       status: true,
       queueEntries: true,
       action: {
+        totalPayment: true,
         select: {
           appointmentType: {
             select: { id: true, type: true },
@@ -347,6 +353,7 @@ const getAppointmentsByDoctorId = async (doctorId) => {
       status: true,
       queueEntries: true,
       action: {
+        totalPayment: true,
         select: {
           appointmentType: {
             select: {
