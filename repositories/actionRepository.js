@@ -7,7 +7,21 @@ const createAction = async (data) => {
 const getAllActions = async () => {
   return await prisma.action.findMany({
     include: {
-      patient: true,
+      patient: {
+        select:{
+         user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              dateOfBirth: true,
+              phone: true,
+              email: true,
+            },
+          },
+          medicalHistory: true,
+        },
+      },
       appointments: true,
       payments: true,
       appointmentType: true,
