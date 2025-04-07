@@ -27,4 +27,17 @@ const getReceptionistsAndDoctor = async (doctorId) => {
   });
 };
 
-module.exports = { getStaff, getReceptionist, getReceptionistsAndDoctor };
+const getReceptionistsAndDoctors = async () => {
+  return await prisma.user.findMany({
+    where: {
+      role: { in: ["RECEPTIONIST", "DOCTOR"] }
+    }
+  });
+};
+
+module.exports = { 
+  getStaff, 
+  getReceptionist, 
+  getReceptionistsAndDoctor,
+  getReceptionistsAndDoctors
+};

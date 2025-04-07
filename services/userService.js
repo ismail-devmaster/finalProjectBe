@@ -12,4 +12,13 @@ const getReceptionistsAndDoctor = async (doctorId) => {
   return await userRepository.getReceptionistsAndDoctor(doctorId);
 };
 
-module.exports = { getUsers, getReceptionists, getReceptionistsAndDoctor };
+const getReceptionistsAndDoctors = async () => {
+  return await userRepository.getReceptionistsAndDoctors();
+};
+
+module.exports = { 
+  getUsers, 
+  getReceptionists, 
+  getReceptionistsAndDoctor,
+  getReceptionistsAndDoctors
+};

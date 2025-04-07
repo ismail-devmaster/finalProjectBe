@@ -28,8 +28,18 @@ const getReceptionistsAndDoctorController = async (req, res) => {
   }
 };
 
+const getReceptionistsAndDoctorsController = async (req, res) => {
+  try {
+    const users = await userService.getReceptionistsAndDoctors();
+    res.status(200).json(users);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = { 
   getUsersController, 
   getReceptionistsController,
-  getReceptionistsAndDoctorController 
+  getReceptionistsAndDoctorController,
+  getReceptionistsAndDoctorsController
 };
