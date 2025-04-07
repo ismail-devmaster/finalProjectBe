@@ -198,8 +198,8 @@ const getAppointmentsByActionId = async (actionId) => {
       status: true,
       queueEntries: true,
       action: {
-        totalPayment: true,
         select: {
+          totalPayment: true,
           appointmentType: {
             select: {
               id: true,
