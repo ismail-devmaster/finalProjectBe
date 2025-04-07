@@ -9,7 +9,7 @@ const {
 router.get(
   "/",
   authenticateUser,
-  authorizeRoles("ADMIN"),
+  authorizeRoles("ADMIN", "DOCTOR"),
   categoryController.getAllCategories
 );
 

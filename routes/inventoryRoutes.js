@@ -30,7 +30,7 @@ router.get(
 router.get(
   "/in-stock",
   authenticateUser,
-  authorizeRoles("ADMIN", "DOCtOR"),
+  authorizeRoles("ADMIN", "DOCTOR"),
   inventoryController.getInStockInventories
 );
 
