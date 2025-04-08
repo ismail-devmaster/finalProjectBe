@@ -19,7 +19,12 @@ router.get(
   authorizeRoles("DOCTOR", "RECEPTIONIST", "ADMIN"),
   userController.getReceptionistsController
 );
-
+router.get(
+  "/data",
+  authenticateUser,
+  authorizeRoles("ADMIN", "DOCTOR", "RECEPTIONIST", "PATIENT"),
+  userController.getUserDataController
+);
 router.get(
   "/receptionists-and-doctor/:doctorId",
   authenticateUser,
@@ -32,13 +37,6 @@ router.get(
   authenticateUser,
   authorizeRoles("DOCTOR", "RECEPTIONIST", "ADMIN"),
   userController.getReceptionistsAndDoctorsController
-);
-
-router.get(
-  "/data",
-  authenticateUser,
-  authorizeRoles("ADMIN", "DOCTOR", "RECEPTIONIST, PATIENT"),
-  userController.getUserDataController
 );
 
 module.exports = router;
