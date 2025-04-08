@@ -1,4 +1,4 @@
-const userService = require('../services/userService');
+const userService = require("../services/userService");
 
 const getUsersController = async (req, res) => {
   try {
@@ -37,9 +37,23 @@ const getReceptionistsAndDoctorsController = async (req, res) => {
   }
 };
 
-module.exports = { 
-  getUsersController, 
+const getUserDataController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await userService.getUserById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = {
+  getUsersController,
   getReceptionistsController,
   getReceptionistsAndDoctorController,
-  getReceptionistsAndDoctorsController
+  getReceptionistsAndDoctorsController,
+  getUserDataController,
 };

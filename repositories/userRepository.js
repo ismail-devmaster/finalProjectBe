@@ -35,9 +35,16 @@ const getReceptionistsAndDoctors = async () => {
   });
 };
 
+const getUserById = async (userId) => {
+  return await prisma.user.findUnique({
+    where: { id: parseInt(userId) }
+  });
+};
+
 module.exports = { 
   getStaff, 
   getReceptionist, 
   getReceptionistsAndDoctor,
-  getReceptionistsAndDoctors
+  getReceptionistsAndDoctors,
+  getUserById
 };

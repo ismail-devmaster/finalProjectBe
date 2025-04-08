@@ -16,9 +16,14 @@ const getReceptionistsAndDoctors = async () => {
   return await userRepository.getReceptionistsAndDoctors();
 };
 
+const getUserById = async (userId) => {
+  return await userRepository.getUserById(userId);
+};
+
 module.exports = { 
   getUsers, 
   getReceptionists, 
   getReceptionistsAndDoctor,
-  getReceptionistsAndDoctors
+  getReceptionistsAndDoctors,
+  getUserById
 };
